@@ -1,4 +1,5 @@
 import pickle
+
 import uuid
 
 from twisted.internet.protocol import Protocol, Factory, connectionDone
@@ -8,14 +9,17 @@ import interfaces
 
 
 class Server(Protocol):
-
+    factory: "ServerFactory"
     uuid: uuid.UUID
 
     def connectionMade(self):
         self.uuid = uuid.uuid4()
         self.factory.connected_clients[self.uuid] = self
         self.factory.message.add(
-            type="status", section="misc", item="my_uuid", value=str(self.uuid)
+            section="misc", item="my_uuid", value=str(self.uuid)
+        )
+        self.factory.message.add(
+            section="misc", item="my_id", value=len(self.factory.connected_clients) - 1
         )
         self.transport.write(self.factory.message.get())
 
@@ -23,7 +27,10 @@ class Server(Protocol):
         del self.factory.connected_clients[self.uuid]
 
     def dataReceived(self, data: bytes):
-        self.broadcast(data)
+        self.factory.message.add(
+            section="players", item=0, attribute="name", value="Player 1"
+        )
+        self.transport.write(self.factory.message.get())
 
     def broadcast(self, data: bytes):
         message = f"{self.uuid}: {pickle.loads(data)}"
