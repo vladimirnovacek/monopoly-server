@@ -13,18 +13,22 @@ class Server(Protocol):
     uuid: uuid.UUID
 
     def connectionMade(self):
+        if len(self.factory.connected_clients) >= 4:
+            self.transport.loseConnection()
+            return
         self.uuid = uuid.uuid4()
         self.factory.connected_clients[self.uuid] = self
-        self.factory.message.add(
-            section="misc", item="my_uuid", value=str(self.uuid)
-        )
-        self.factory.message.add(
-            section="misc", item="my_id", value=len(self.factory.connected_clients) - 1
-        )
-        self.transport.write(self.factory.message.get())
+        dic = {
+            "my_uuid": self.uuid, "action": "add_player",
+            "parameters": {"my_id": len(self.factory.connected_clients) - 1}
+        }
+        self.factory.parser.parse(dic)
+        message = self.factory.parser.get_initial_message(self.uuid)
+        self.transport.write(message)
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
-        del self.factory.connected_clients[self.uuid]
+        if self.uuid in self.factory.connected_clients:
+            del self.factory.connected_clients[self.uuid]
 
     def dataReceived(self, data: bytes):
         self.factory.message.add(
@@ -43,6 +47,7 @@ class ServerFactory(Factory):
 
     protocol = Server
 
-    def __init__(self, message_factory: interfaces.MessageFactory):
-        self.message = message_factory
+    def __init__(self, message_factory: interfaces.MessageFactory, parser: interfaces.Parser):
+        self.message: interfaces.MessageFactory = message_factory
+        self.parser: interfaces.Parser = parser
         self.connected_clients = dict()
