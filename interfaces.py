@@ -1,4 +1,4 @@
-from typing import Protocol, Self
+from typing import Protocol, Self, overload
 
 
 class Observer(Protocol):
@@ -11,4 +11,12 @@ class MessageFactory(Protocol):
         ...
 
     def get(self) -> bytes:
+        ...
+
+
+class Parser(Protocol):
+    def get_initial_message(self, player_uuid):
+        ...
+
+    def parse(self, data):
         ...
