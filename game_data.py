@@ -1,5 +1,6 @@
-import uuid
-from typing import TypedDict, Any, overload, Iterable
+from collections.abc import Iterator
+from uuid import UUID
+from typing import TypedDict, Any, Iterable
 
 
 class Field(TypedDict, total=False):
@@ -28,58 +29,97 @@ class GameData:
 
     def __init__(self):
         self.fields: dict[int, Field] = {}
-        self.players: dict[uuid.UUID, Player] = {}
+        self.players: dict[UUID, Player] = {}
         self.misc: Misc = {}
+        self._changes = set()
 
     def __getitem__(self, item):
         return getattr(self, item)
 
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
     def __repr__(self):
         return f"{self.__class__.__name__}({self.__dict__})"
 
-    def add_player(self, player_uuid, player_id):
-        self.players[player_uuid] = Player(
+    def add_player(self, player_uuid: UUID, player_id):
+        new_player = Player(
             player_id=player_id,
-            name=f"Player {player_id}",
+            name=f"Player {player_id + 1}",
             token="",
             cash=0,
             field_id=-1,
             ready=False
         )
-        print(self)
+        self.players[player_uuid] = Player()
+        for key, value in new_player.items():
+            self.update(section="players", item=player_uuid, attribute=key, value=value)
+        return {player_uuid: self.players[player_uuid]}
 
-    @overload
-    def update(self, *, section: str, item: str | int, value: Any):
-        ...
-
-    @overload
-    def update(self, *, section: str, item: str | int, attribute: str, value: Any):
-        ...
-
-    def update(self, *, section: str, item: str | int, attribute: str | None = None, value: Any):
+    def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
+        """
+        Updates the value of a specific item.
+        :param section:
+        :type section: str
+        :param item:
+        :type item: str | UUID
+        :param attribute:
+        :type attribute: str | None
+        :param value:
+        :type value: Any
+        :return:
+        :rtype: None
+        """
         if attribute is not None:
             self[section][item][attribute] = value
+            self._changes.add((section, item, attribute))
         else:
             self[section][item] = value
-        print(self)
+            self._changes.add((section, item))
 
-    def select(self, keys: Iterable):
-        value = self
-        for key in keys:
-            value = value[key]
-        return value
-
-    def get_value(self, section: str, item: str | uuid.UUID, attribute: str | None = None) -> Any:
+    def get_value(self, section: str, item: str | UUID, attribute: str | None = None) -> Any:
+        """
+        Retrieves only the value for a specific item.
+        :param section:
+        :type section: str
+        :param item:
+        :type item: str | UUID
+        :param attribute:
+        :type attribute: str | None
+        :return:
+        :rtype: Any
+        """
         return self[section][item][attribute] if attribute else self[section][item]
 
-    def get(self, section: str, item: str | uuid.UUID, attribute: str | None = None) -> dict:
+    def get(self, section: str, item: str | UUID, attribute: str | None = None) -> dict:
+        """
+        Retrieves data for a specific item in a format that can be used by the messenger.
+        :param section:
+        :type section: str
+        :param item:
+        :type item: str | UUID
+        :param attribute:
+        :type attribute: str | None
+        :return:
+        :rtype: dict
+        """
         keys = (section, item, attribute) if attribute else (section, item)
-        record = {"section": section, "item": item, "value": self.select(keys)}
+        record = {"section": section, "item": item, "value": self.get_value(*keys)}
         if attribute:
             record["attribute"] = attribute
         return record
 
-    def get_all_for_player(self, player_uuid: uuid.UUID) -> list[dict]:
+    def get_changes(self) -> Iterator[dict]:
+        """
+        Retrieves data for all recently altered items in a format that can be used by the messenger. Method
+        returns an iterator that can be used in a for loop.
+        :return:
+        :rtype: Iterator[tuple[str, str | UUID, str | None]]
+        """
+        while self._changes:
+            yield self.get(*self._changes.pop())
+
+    def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
         """
         Retrieves all data for a specific player in a format that can be used by the message factory.
         Args:
@@ -110,7 +150,6 @@ class GameData:
             for attribute in self["players"][item]:
                 value = self.get_value("players", item, attribute)
                 data.append({"section": "players", "item": player_id, "attribute": attribute, "value": value})
-
         return data
 
     def get_all(self) -> set[dict]:

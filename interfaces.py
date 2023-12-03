@@ -1,4 +1,11 @@
-from typing import Protocol, Self, overload
+from typing import Protocol, Self, TypedDict
+from uuid import UUID
+
+
+class ClientMessage(TypedDict):
+    my_uuid: UUID
+    action: str
+    parameters: dict
 
 
 class Observer(Protocol):
