@@ -70,6 +70,8 @@ class GameData:
         :return:
         :rtype: None
         """
+        if self.get_value(section,item, attribute) == value:  # No changes
+            return
         if attribute is not None:
             self[section][item][attribute] = value
             self._changes.add((section, item, attribute))
@@ -79,7 +81,7 @@ class GameData:
 
     def get_value(self, section: str, item: str | UUID, attribute: str | None = None) -> Any:
         """
-        Retrieves only the value for a specific item.
+        Retrieves only the value for a specific item. Returns None if there is no such item.
         :param section:
         :type section: str
         :param item:
@@ -89,7 +91,10 @@ class GameData:
         :return:
         :rtype: Any
         """
-        return self[section][item][attribute] if attribute else self[section][item]
+        try:
+            return self[section][item][attribute] if attribute else self[section][item]
+        except (KeyError, IndexError):
+            return None
 
     def get(self, section: str, item: str | UUID, attribute: str | None = None) -> dict:
         """
@@ -109,18 +114,24 @@ class GameData:
             record["attribute"] = attribute
         return record
 
-    def get_changes(self) -> Iterator[dict]:
+    def get_changes(self, for_client: bool = True) -> Iterator[dict]:
         """
         Retrieves data for all recently altered items in a format that can be used by the messenger. Method
         returns an iterator that can be used in a for loop.
+        :param for_client: When changes are meant for a client, uuid has to be replaced with id. Default: True.
+        :type for_client: bool
         :return:
         :rtype: Iterator[tuple[str, str | UUID, str | None]]
         """
         while self._changes:
-            yield self.get(*self._changes.pop())
+            change = self.get(*self._changes.pop())
+            if for_client:
+                if change["section"] == "players":
+                    change["item"] = self._id_from_uuid(change["item"])
+            yield change
 
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
-        """
+        """ TODO change docstring format
         Retrieves all data for a specific player in a format that can be used by the message factory.
         Args:
             player_uuid (uuid.UUID): The UUID of the player.
@@ -129,7 +140,7 @@ class GameData:
         """
         data = list()
         # Following data is stored in a different location on the player's side.
-        data.append({"section": "misc", "item": "my_uuid", "value": str(player_uuid)})
+        data.append({"section": "misc", "item": "my_uuid", "value": player_uuid})
         player_id = self.get_value("players", player_uuid, "player_id")
         data.append({"section": "misc", "item": "my_id", "value": player_id})
         # Retrieve data from sections "fields" and "misc".
@@ -164,6 +175,14 @@ class GameData:
                     value = self.get(section, item)
                     data.add({"section": section, "item": item, "value": value})
         return data
+
+    def _id_from_uuid(self, player_uuid: UUID) -> int:
+        return self.players[player_uuid]["player_id"]
+
+    def _uuid_from_id(self, player_id: int) -> UUID:
+        for player_uuid, player in self.players.items():
+            if player["player_id"] == player_id:
+                return player_uuid
 
 '''
 {"jmeno":

@@ -37,14 +37,15 @@ class Server(Protocol):
 
     def dataReceived(self, data: bytes):
         print("Data received: ", pickle.loads(data))
+        self.factory.messenger.receive(data)
 
-    def broadcast(self, data: bytes):
-        message = f"{self.player_uuid}: {pickle.loads(data)}"
-        data = pickle.dumps(message)
-        for client in self.factory.connected_clients.values():
-            client.transport.write(data)
-
-    def send(self, data: bytes):
+    def send(self, data: bytes) -> None:
+        """
+        Sends the given data to the client.
+        :param data: The data to be sent.
+        :type data: bytes
+        """
+        print(f"Sent to {self.player_uuid}: {pickle.loads(data)}")
         self.transport.write(data)
 
 class ServerFactory(Factory):
@@ -53,12 +54,10 @@ class ServerFactory(Factory):
 
     def __init__(self, messenger: Messenger):
         self.server_uuid = uuid.uuid4()
-        # self.message: interfaces.MessageFactory = message_factory  # possibly redundant
         self.messenger: Messenger = messenger
         self.messenger.set_server(self)
-        # self.messenger.network = self  # possibly redundant
-        self.connected_clients = dict()
-        self.available_ids = set(range(4))
+        self.connected_clients: dict[uuid.UUID, Server] = dict()
+        self.available_ids: set[int] = set(range(4))
 
     def get_id(self) -> int:
         """
@@ -80,9 +79,21 @@ class ServerFactory(Factory):
         """
         self.available_ids.add(player_id)
 
-    def broadcast(self, data: bytes):
+    def broadcast(self, data: bytes) -> None:
+        """
+        Broadcasts the given data to all connected clients.
+        :param data: The data to be sent.
+        :type data: bytes
+        """
         for client in self.connected_clients.values():
             client.send(data)
 
-    def send(self, player_uuid: uuid.UUID, data: bytes):
+    def send(self, player_uuid: uuid.UUID, data: bytes) -> None:
+        """
+        Sends the given data to the given player.
+        :param player_uuid: The UUID of the player.
+        :type player_uuid: UUID
+        :param data: The data to be sent.
+        :type data: bytes
+        """
         self.connected_clients[player_uuid].send(data)
