@@ -4,6 +4,7 @@ import uuid
 
 import game_data
 from interfaces import ClientMessage
+from states import PreGameState, State
 
 if typing.TYPE_CHECKING:
     from messenger import Messenger
@@ -14,12 +15,10 @@ class GameController:
         self.game_data: game_data.GameData = data
         self.message: Messenger | None = None
         self.server_uuid: uuid.UUID | None = None
+        self.state: State = PreGameState(self)
 
     def parse(self, message: ClientMessage) -> None:
-        if message["action"] == "add_player":
-            self._add_player(message)
-        elif message["action"] == "user_info":
-            self._update_user(message)
+        self.state.parse(message)
 
     def send_initial_message(self, player_uuid: uuid.UUID) -> None:
         """

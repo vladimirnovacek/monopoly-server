@@ -1,6 +1,9 @@
 from collections.abc import Iterator
+from itertools import cycle
 from uuid import UUID
 from typing import TypedDict, Any, Iterable
+
+import config
 
 
 class Field(TypedDict, total=False):
@@ -23,6 +26,7 @@ class Misc(TypedDict, total=False):
     on_turn: int
     last_roll: tuple
     players_order: list[int]
+    state: str
 
 
 class GameData:
@@ -30,8 +34,9 @@ class GameData:
     def __init__(self):
         self.fields: dict[int, Field] = {}
         self.players: dict[UUID, Player] = {}
-        self.misc: Misc = {}
+        self.misc: Misc = {"state": "pregame"}
         self._changes = set()
+        self.player_order_cycler: cycle | None = None
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -79,7 +84,7 @@ class GameData:
             self[section][item] = value
             self._changes.add((section, item))
 
-    def get_value(self, section: str, item: str | UUID, attribute: str | None = None) -> Any:
+    def get_value(self, section: str, item: str | int | UUID, attribute: str | None = None) -> Any:
         """
         Retrieves only the value for a specific item. Returns None if there is no such item.
         :param section:
@@ -144,16 +149,13 @@ class GameData:
         player_id = self.get_value("players", player_uuid, "player_id")
         data.append({"section": "misc", "item": "my_id", "value": player_id})
         # Retrieve data from sections "fields" and "misc".
-        for section in ("fields", "misc"):
-            for item in self[section]:
-                # In "misc", item doesn't contain a dictionary of attributes, but values.
-                if isinstance(Iterable, self[section][item]):
-                    for attribute in self[section][item]:
-                        value = self.get_value(section, item, attribute)
-                        data.append({"section": section, "item": item, "attribute": attribute, "value": value})
-                else:
-                    value = self.get(section, item)
-                    data.append({"section": section, "item": item, "value": value})
+        for item in self.fields:
+            for attribute in self.fields[item]:
+                value = self.get_value("fields", item, attribute)
+                data.append({"section": "fields", "item": item, "attribute": attribute, "value": value})
+        for item in self.misc:
+            value = self.get("misc", item)
+            data.append({"section": "misc", "item": item, "value": value})
         # Retrieve data from section "players". It is done separately because
         # we don't want to send uuids of other players.
         for item in self["players"]:
@@ -175,6 +177,14 @@ class GameData:
                     value = self.get(section, item)
                     data.add({"section": section, "item": item, "value": value})
         return data
+
+    def is_all_players_ready(self):
+        return all([player["ready"] for player in self.players.values()])
+
+    def set_initial_values(self):
+        for player in self.players:
+            self.update(section="players", item=player, attribute="cash", value=config.initial_cash)
+            self.update(section="players", item=player, attribute="field", value=config.initial_field)
 
     def _id_from_uuid(self, player_uuid: UUID) -> int:
         return self.players[player_uuid]["player_id"]

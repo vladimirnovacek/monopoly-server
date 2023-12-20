@@ -1,4 +1,5 @@
 import pickle
+import sys
 
 import uuid
 
@@ -30,10 +31,11 @@ class Server(Protocol):
         self.factory.messenger.receive(dic)
 
     def connectionLost(self, reason: failure.Failure = connectionDone):
+        # TODO exit when no player connected
+        # TODO broadcast new info to other players when one of them leaves
         if self.player_uuid in self.factory.connected_clients:
             del self.factory.connected_clients[self.player_uuid]
             self.factory.retrieve_id(self.player_id)
-
 
     def dataReceived(self, data: bytes):
         print("Data received: ", pickle.loads(data))
