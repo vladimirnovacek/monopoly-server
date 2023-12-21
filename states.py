@@ -1,7 +1,7 @@
 import logging
 import random
 import typing
-from abc import ABC
+from abc import ABC, abstractmethod
 from itertools import cycle
 
 from uuid import UUID
@@ -16,9 +16,11 @@ class State(ABC):
     def __init__(self, controller: "GameController"):
         self.controller = controller
 
-    def  parse(self, message: ClientMessage):
+    @abstractmethod
+    def parse(self, message: ClientMessage):
         ...
 
+    @abstractmethod
     def get_possible_actions(self) -> set[str]:
         ...
 
@@ -28,8 +30,10 @@ class State(ABC):
         self.controller.message.broadcast()
 
 
-
 class PreGameState(State):
+    def get_possible_actions(self) -> set[str]:
+        return {"add_player", "user_info", "start_game"}
+
     def parse(self, message: ClientMessage):
         if message["action"] == "add_player":
             self._add_player(message)
@@ -82,4 +86,26 @@ class PreGameState(State):
         game_data.player_order_cycler = cycle(player_order)
         game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
         self._broadcast_changes()
+        self.controller.state = BeginTurnState(self.controller)
 
+
+class BeginTurnState(State):
+    def get_possible_actions(self) -> set[str]:
+        return {"roll_dice"}
+
+    def parse(self, message: ClientMessage):
+        if message["action"] == "roll_dice":
+            self._roll_dice()
+
+    def _roll_dice(self):
+        game_data = self.controller.game_data
+        on_turn_uuid = game_data.uuid_from_id(game_data["misc"]["on_turn"])
+        roll = self.controller.dice.roll()
+        game_data.update(section="misc", item="last_roll", value=roll.get())
+        game_data.update(
+            section="players",
+            item=on_turn_uuid,
+            attribute="field",
+            value=game_data.get_value(section="players", item=on_turn_uuid, attribute="field") + roll.sum()
+        )
+        self._broadcast_changes()

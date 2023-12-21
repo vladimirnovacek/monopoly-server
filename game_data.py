@@ -132,7 +132,7 @@ class GameData:
             change = self.get(*self._changes.pop())
             if for_client:
                 if change["section"] == "players":
-                    change["item"] = self._id_from_uuid(change["item"])
+                    change["item"] = self.id_from_uuid(change["item"])
             yield change
 
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
@@ -184,10 +184,10 @@ class GameData:
             self.update(section="players", item=player, attribute="cash", value=config.initial_cash)
             self.update(section="players", item=player, attribute="field", value=config.initial_field)
 
-    def _id_from_uuid(self, player_uuid: UUID) -> int:
+    def id_from_uuid(self, player_uuid: UUID) -> int:
         return self.players[player_uuid]["player_id"]
 
-    def _uuid_from_id(self, player_id: int) -> UUID:
+    def uuid_from_id(self, player_id: int) -> UUID:
         for player_uuid, player in self.players.items():
             if player["player_id"] == player_id:
                 return player_uuid

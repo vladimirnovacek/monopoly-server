@@ -3,6 +3,7 @@ import typing
 import uuid
 
 import game_data
+from dice import Dice
 from interfaces import ClientMessage
 from states import PreGameState, State
 
@@ -16,6 +17,7 @@ class GameController:
         self.message: Messenger | None = None
         self.server_uuid: uuid.UUID | None = None
         self.state: State = PreGameState(self)
+        self.dice: Dice = Dice(2, 6)
 
     def parse(self, message: ClientMessage) -> None:
         self.state.parse(message)
