@@ -101,7 +101,7 @@ class GameData:
         except (KeyError, IndexError):
             return None
 
-    def get(self, section: str, item: str | UUID, attribute: str | None = None) -> dict:
+    def get(self, section: str, item: str | int | UUID, attribute: str | None = None) -> dict:
         """
         Retrieves data for a specific item in a format that can be used by the messenger.
         :param section:
@@ -151,11 +151,9 @@ class GameData:
         # Retrieve data from sections "fields" and "misc".
         for item in self.fields:
             for attribute in self.fields[item]:
-                value = self.get_value("fields", item, attribute)
-                data.append({"section": "fields", "item": item, "attribute": attribute, "value": value})
+                data.append(self.get("fields", item, attribute))
         for item in self.misc:
-            value = self.get("misc", item)
-            data.append({"section": "misc", "item": item, "value": value})
+            data.append(self.get("misc", item))
         # Retrieve data from section "players". It is done separately because
         # we don't want to send uuids of other players.
         for item in self["players"]:
