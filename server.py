@@ -20,6 +20,9 @@ class Server(Protocol):
         if not self.factory.available_ids:
             self.transport.loseConnection()
             return
+        elif self.factory.locked:
+            self.transport.loseConnection()
+            return
         else:
             self.player_id = self.factory.get_id()
         self.player_uuid = uuid.uuid4()
@@ -60,6 +63,7 @@ class ServerFactory(Factory):
         self.messenger.set_server(self)
         self.connected_clients: dict[uuid.UUID, Server] = dict()
         self.available_ids: set[int] = set(range(4))
+        self.locked = False
 
     def get_id(self) -> int:
         """
