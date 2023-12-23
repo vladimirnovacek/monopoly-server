@@ -85,6 +85,7 @@ class PreGameState(State):
         game_data.update(section="misc", item="player_order", value=player_order)
         game_data.player_order_cycler = cycle(player_order)
         game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
+        game_data.update(section="events", item="game_started", value=True)
         self._broadcast_changes()
         self.controller.state = BeginTurnState(self.controller)
 

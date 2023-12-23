@@ -35,7 +35,8 @@ class GameData:
         self.fields: dict[int, Field] = {}
         self.players: dict[UUID, Player] = {}
         self.misc: Misc = {"state": "pregame"}
-        self._changes = set()
+        self.events = {}
+        self._changes: set[tuple] = set()
         self.player_order_cycler: cycle | None = None
 
     def __getitem__(self, item):
@@ -130,6 +131,8 @@ class GameData:
         """
         while self._changes:
             change = self.get(*self._changes.pop())
+            if change["section"] == "events":
+                del self.events[change["item"]]
             if for_client:
                 if change["section"] == "players":
                     change["item"] = self.id_from_uuid(change["item"])
@@ -191,14 +194,3 @@ class GameData:
         for player_uuid, player in self.players.items():
             if player["player_id"] == player_id:
                 return player_uuid
-
-'''
-{"jmeno":
-    {
-        "player_id": 0,
-        "name": "jmeno",
-        "token": "car",
-        "
-    }
-}
-'''
