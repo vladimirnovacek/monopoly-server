@@ -180,7 +180,7 @@ class GameData:
         return data
 
     def is_all_players_ready(self):
-        return all([player["ready"] for player in self.players.values()])
+        return all([player["ready"] and player["token"] for player in self.players.values()])
 
     def set_initial_values(self):
         for player in self.players:
