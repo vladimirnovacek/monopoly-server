@@ -1,5 +1,6 @@
 import logging
 import random
+import time
 import typing
 from abc import ABC, abstractmethod
 from itertools import cycle
@@ -29,6 +30,12 @@ class State(ABC):
             self.controller.message.add(**record)
         self.controller.message.broadcast()
 
+    def _change_state(self, state: "State"):
+        self.controller.game_data.update(
+            section="events", item="possible_actions", value=state.get_possible_actions()
+        )
+        self.controller.state = state
+
 
 class PreGameState(State):
     def get_possible_actions(self) -> set[str]:
@@ -53,6 +60,7 @@ class PreGameState(State):
         """
         for record in self.controller.game_data.get_all_for_player(player_uuid):
             self.controller.message.add(**record)
+        self.controller.message.add(section="events", item="possible_actions", value=self.get_possible_actions())
         self.controller.message.send(player_uuid)
 
     def _add_player(self, message: ClientMessage) -> None:
@@ -86,17 +94,17 @@ class PreGameState(State):
         game_data.player_order_cycler = cycle(player_order)
         game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
         game_data.update(section="events", item="game_started", value=True)
-        self._broadcast_changes()
         self.controller.message.server.locked = True
-        self.controller.state = BeginTurnState(self.controller)
+        self._change_state(BeginTurnState(self.controller))
+        self._broadcast_changes()
 
 
 class BeginTurnState(State):
     def get_possible_actions(self) -> set[str]:
-        return {"roll_dice"}
+        return {"roll"}
 
     def parse(self, message: ClientMessage):
-        if message["action"] == "roll_dice":
+        if message["action"] == "roll" and self.controller.game_data.is_player_on_turn(message["my_uuid"]):
             self._roll_dice()
 
     def _roll_dice(self):
