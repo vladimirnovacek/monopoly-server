@@ -1,40 +1,11 @@
 import logging
 import random
-import time
-import typing
-from abc import ABC, abstractmethod
 from itertools import cycle
-
 from uuid import UUID
 
 from interfaces import ClientMessage
-
-if typing.TYPE_CHECKING:
-    from game_controller import GameController
-
-
-class State(ABC):
-    def __init__(self, controller: "GameController"):
-        self.controller = controller
-
-    @abstractmethod
-    def parse(self, message: ClientMessage):
-        ...
-
-    @abstractmethod
-    def get_possible_actions(self) -> set[str]:
-        ...
-
-    def _broadcast_changes(self):
-        for record in self.controller.game_data.get_changes():
-            self.controller.message.add(**record)
-        self.controller.message.broadcast()
-
-    def _change_state(self, state: "State"):
-        self.controller.game_data.update(
-            section="events", item="possible_actions", value=state.get_possible_actions()
-        )
-        self.controller.state = state
+from state import State
+from state import BeginTurnState
 
 
 class PreGameState(State):
@@ -96,26 +67,4 @@ class PreGameState(State):
         game_data.update(section="events", item="game_started", value=True)
         self.controller.message.server.locked = True
         self._change_state(BeginTurnState(self.controller))
-        self._broadcast_changes()
-
-
-class BeginTurnState(State):
-    def get_possible_actions(self) -> set[str]:
-        return {"roll"}
-
-    def parse(self, message: ClientMessage):
-        if message["action"] == "roll" and self.controller.game_data.is_player_on_turn(message["my_uuid"]):
-            self._roll_dice()
-
-    def _roll_dice(self):
-        game_data = self.controller.game_data
-        on_turn_uuid = game_data.uuid_from_id(game_data["misc"]["on_turn"])
-        roll = self.controller.dice.roll()
-        game_data.update(section="misc", item="last_roll", value=roll.get())
-        game_data.update(
-            section="players",
-            item=on_turn_uuid,
-            attribute="field",
-            value=game_data.get_value(section="players", item=on_turn_uuid, attribute="field") + roll.sum()
-        )
         self._broadcast_changes()

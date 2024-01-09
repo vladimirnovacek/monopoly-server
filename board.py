@@ -1,9 +1,9 @@
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, TYPE_CHECKING
 
 from uuid import UUID
 
 from board_description import FIELDS, FieldType
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from game_controller import GameController
 
 
@@ -14,7 +14,7 @@ class Field:
         self.info: dict = FIELDS[field_id]
         if self.is_property():
             self.owner: Optional[UUID] = None
-            if self.info["field_type"] is FieldType.STREET:
+            if self.type is FieldType.STREET:
                 self.houses: int = 0
 
     def __getattr__(self, item):
@@ -58,22 +58,22 @@ class Field:
         return info
 
     def is_tax(self):
-        return self.field_type is FieldType.TAX
+        return self.type is FieldType.TAX
 
     def is_chance_cc_card(self) -> bool:
-        return bool(self.field_type & FieldType.CARD)
+        return bool(self.type & FieldType.CARD)
 
     def is_property(self) -> bool:
-        return bool(self.field_type & FieldType.PROPERTY)
+        return bool(self.type & FieldType.PROPERTY)
 
     def is_street(self) -> bool:
-        return bool(self.field_type & FieldType.STREET)
+        return bool(self.type & FieldType.STREET)
 
     def is_go_to_jail(self) -> bool:
-        return bool(self.field_type & FieldType.GO_TO_JAIL)
+        return bool(self.type & FieldType.GO_TO_JAIL)
 
     def is_nonactive(self) -> bool:
-        return bool(self.field_type & FieldType.NONACTIVE)
+        return bool(self.type & FieldType.NONACTIVE)
 
 
 class Board:

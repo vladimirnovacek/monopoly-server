@@ -1,0 +1,25 @@
+from interfaces import ClientMessage
+from state import State
+
+
+class BeginTurnState(State):
+    def get_possible_actions(self) -> set[str]:
+        return {"roll"}
+
+    def parse(self, message: ClientMessage):
+        if message["action"] == "roll" and self.controller.game_data.is_player_on_turn(message["my_uuid"]):
+            self._roll_dice()
+
+    def _roll_dice(self):
+        game_data = self.controller.game_data
+        on_turn_uuid = game_data.uuid_from_id(game_data["misc"]["on_turn"])
+        roll = self.controller.dice.roll()
+        game_data.update(section="misc", item="last_roll", value=roll.get())
+        game_data.update(
+            section="players",
+            item=on_turn_uuid,
+            attribute="field",
+            value=game_data.get_value(section="players", item=on_turn_uuid, attribute="field") + roll.sum()
+        )
+        game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
+        self._broadcast_changes()

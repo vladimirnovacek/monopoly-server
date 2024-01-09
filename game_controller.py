@@ -6,7 +6,8 @@ import game_data
 from board import Board
 from dice import Dice
 from interfaces import ClientMessage
-from states import PreGameState, State
+from state.pre_game import PreGameState
+from state.state import State
 
 if typing.TYPE_CHECKING:
     from messenger import Messenger
