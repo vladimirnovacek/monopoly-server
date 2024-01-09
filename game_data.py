@@ -194,3 +194,6 @@ class GameData:
         for player_uuid, player in self.players.items():
             if player["player_id"] == player_id:
                 return player_uuid
+
+    def is_player_on_turn(self, player_uuid: UUID) -> bool:
+        return player_uuid == self.uuid_from_id(self.get_value("misc", "on_turn"))

@@ -3,6 +3,8 @@ from typing import ClassVar, Optional
 from uuid import UUID
 
 from board_description import FIELDS, FieldType
+if typing.TYPE_CHECKING:
+    from game_controller import GameController
 
 
 class Field:
@@ -85,8 +87,8 @@ class Board:
     GO_CASH: ClassVar[int] = 200
     """ Cash that the player recieves when they land on GO. """
 
-    def __init__(self, game = None):
-        self.game = game
+    def __init__(self, game_controller: "GameController"):
+        self.game_controller = game_controller
         self.fields: list[Field] = list()
         self._generate_fields()
         self.lenght: int = self.LENGHT
@@ -99,11 +101,6 @@ class Board:
         return list(filter(
             lambda field: field.field_type == FieldType.STREET, self.fields
         ))
-
-    def player_landed(self, field: int):
-        self.game.set_changes(section="field", value=self.get_field_info(field))
-        if self.is_card(field):
-            self.game.take_card()
 
     def _generate_fields(self) -> None:
         for i in range(len(FIELDS)):
