@@ -1,5 +1,6 @@
 from interfaces import ClientMessage
-from state import State
+from state.state import State
+from state.end_turn import EndTurnState
 
 
 class BeginTurnState(State):
@@ -19,7 +20,7 @@ class BeginTurnState(State):
             section="players",
             item=on_turn_uuid,
             attribute="field",
-            value=game_data.get_value(section="players", item=on_turn_uuid, attribute="field") + roll.sum()
+            value=(game_data.get_value(section="players", item=on_turn_uuid, attribute="field") + roll.sum()) % 40
         )
-        game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
+        self._change_state(EndTurnState(self.controller))
         self._broadcast_changes()
