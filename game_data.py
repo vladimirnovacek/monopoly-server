@@ -4,6 +4,7 @@ from uuid import UUID
 from typing import TypedDict, Any, Iterable
 
 import config
+from board import BoardData
 
 
 class Field(TypedDict, total=False):
@@ -32,7 +33,7 @@ class Misc(TypedDict, total=False):
 class GameData:
 
     def __init__(self):
-        self.fields: dict[int, Field] = {}
+        self.fields: BoardData = BoardData()
         self.players: dict[UUID, Player] = {}
         self.misc: Misc = {"state": "pregame"}
         self.events = {}
@@ -76,9 +77,12 @@ class GameData:
         :return:
         :rtype: None
         """
-        if self.get_value(section,item, attribute) == value:  # No changes
+        if self.get_value(section,item, attribute) == value:  # No changes, necessary due to recursion
             return
-        if attribute is not None:
+        if section == "fields":
+            self.fields.update(item=item, attribute=attribute, value=value)
+            self._changes.add((section, item, attribute, value))
+        elif attribute is not None:
             self[section][item][attribute] = value
             self._changes.add((section, item, attribute))
         else:
@@ -102,7 +106,7 @@ class GameData:
         except (KeyError, IndexError):
             return None
 
-    def get(self, section: str, item: str | int | UUID, attribute: str | None = None) -> dict:
+    def get(self, section: str, item: str | int | UUID, attribute: str | None = None, value: Any = None) -> dict:
         """
         Retrieves data for a specific item in a format that can be used by the messenger.
         :param section:
@@ -111,11 +115,17 @@ class GameData:
         :type item: str | UUID
         :param attribute:
         :type attribute: str | None
+        :param value:
+        :type value: Any
         :return:
         :rtype: dict
         """
         keys = (section, item, attribute) if attribute else (section, item)
-        record = {"section": section, "item": item, "value": self.get_value(*keys)}
+        if not value:
+            value = self.get_value(*keys)
+        if type(value) not in (int, str, tuple):
+            value = str(value)
+        record = {"section": section, "item": item, "value": value}
         if attribute:
             record["attribute"] = attribute
         return record
@@ -124,7 +134,8 @@ class GameData:
         """
         Retrieves data for all recently altered items in a format that can be used by the messenger. Method
         returns an iterator that can be used in a for loop.
-        :param for_client: When changes are meant for a client, uuid has to be replaced with id. Default: True.
+        :param for_client: When changes are meant to be sent to a client, uuid has to be replaced with id.
+        Default: True.
         :type for_client: bool
         :return:
         :rtype: Iterator[tuple[str, str | UUID, str | None]]
@@ -152,9 +163,10 @@ class GameData:
         player_id = self.get_value("players", player_uuid, "player_id")
         data.append({"section": "misc", "item": "my_id", "value": player_id})
         # Retrieve data from sections "fields" and "misc".
-        for item in self.fields:
-            for attribute in self.fields[item]:
-                data.append(self.get("fields", item, attribute))
+        data.append({"section": "fields", "item": -1, "attribute": "lenght", "value": len(self.fields)})
+        for i, field in enumerate(self.fields):
+            for attribute in field:
+                data.append(self.get("fields", i, attribute, getattr(field, attribute)))
         for item in self.misc:
             data.append(self.get("misc", item))
         # Retrieve data from section "players". It is done separately because

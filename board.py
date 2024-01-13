@@ -1,15 +1,13 @@
-from typing import ClassVar, Optional, TYPE_CHECKING
+from typing import ClassVar, Optional, Any
 
 from uuid import UUID
 
 from board_description import FIELDS, FieldType
-if TYPE_CHECKING:
-    from game_controller import GameController
 
 
 class Field:
 
-    def __init__(self, board: "Board", field_id: int):
+    def __init__(self, board: "BoardData", field_id: int):
         self.board = board
         self.info: dict = FIELDS[field_id]
         if self.is_property():
@@ -22,8 +20,28 @@ class Field:
             return self.info[item]
         raise AttributeError(f"'{self.__class__.__name__}' has no attribute {item}")
 
+    def __getitem__(self, item):
+        return self.full_info[item]
+    def __iter__(self):
+        return iter(self.full_info)
+
+    @property
+    def full_info(self) -> dict:
+        info = self.info.copy()
+        if hasattr(self, "owner"):
+            info["owner"] = self.owner
+            if hasattr(self, "houses"):
+                info["houses"] = self.houses
+        return info
+
     @property
     def rent(self) -> int | None:
+        """
+        Returns the rent of the field. For utilities it returns just a multiplier that has to be multiplied with
+        the dice roll to get the actual rent.
+        :return: The actual rent. None if the field is not a property.
+        :rtype: int | None
+        """
         if not self.is_property():
             return None
         if self.is_street():
@@ -76,7 +94,7 @@ class Field:
         return bool(self.type & FieldType.NONACTIVE)
 
 
-class Board:
+class BoardData:
     # počet polí na hracím plánu
     LENGHT: ClassVar[int] = 40
     """ Lenght of the board. """
@@ -87,14 +105,22 @@ class Board:
     GO_CASH: ClassVar[int] = 200
     """ Cash that the player recieves when they land on GO. """
 
-    def __init__(self, game_controller: "GameController"):
-        self.game_controller = game_controller
+    def __init__(self):
         self.fields: list[Field] = list()
         self._generate_fields()
         self.lenght: int = self.LENGHT
         self.jail: int = self.JAIL
         self.just_visiting: int = self.JUST_VISITING
         self.go_cash: int = self.GO_CASH
+
+    def __len__(self):
+        return len(self.fields)
+
+    def __iter__(self):
+        return iter(self.fields)
+
+    def __getitem__(self, item):
+        return self.fields[item]
 
     @property
     def streets(self) -> list[Field]:
@@ -105,6 +131,9 @@ class Board:
     def _generate_fields(self) -> None:
         for i in range(len(FIELDS)):
             self.fields.append(Field(self, i))
+
+    def update(self, *, item: str, attribute: str, value: Any) -> None:
+        setattr(self.fields[int(item)], attribute, value)
 
     def get_properties_in_set_owned(self, field: Field) -> int:
         owner = field.owner

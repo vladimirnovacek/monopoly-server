@@ -3,7 +3,7 @@ import typing
 import uuid
 
 import game_data
-from board import Board
+from board import BoardData
 from dice import Dice
 from interfaces import ClientMessage
 from state.pre_game import PreGameState
@@ -20,7 +20,7 @@ class GameController:
         self.server_uuid: uuid.UUID | None = None
         self.state: State = PreGameState(self)
         self.dice: Dice = Dice(2, 6)
-        self.board: Board = Board(self)
+        self.board: BoardData = BoardData()
 
     def __getattr__(self, item):
         return getattr(self.state, item)

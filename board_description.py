@@ -25,6 +25,8 @@ class FieldType(Flag):
     NONACTIVE = GO | JUST_VISITING | FREE_PARKING
     """ Nonactive field types can be one of these: GO, JUST_VISITING, FREE_PARKING. """
 
+    def __str__(self):
+        return self.name.lower()
 
 class StreetColor(Enum):
     """ StreetColor represents the color of a street. """
@@ -36,6 +38,9 @@ class StreetColor(Enum):
     YELLOW = auto()
     GREEN = auto()
     DBLUE = auto()
+
+    def __str__(self):
+        return self.name.lower()
 
 
 class FieldRecord(typing.TypedDict):
@@ -49,12 +54,13 @@ class FieldRecord(typing.TypedDict):
 FIELDS: list[FieldRecord] = [
     {
         "index": "go",
-        "type": FieldType.GO
+        "type": FieldType.GO,
+        "name": "Go"
     },  # 0
     {
         "index": "brown_1",
         "type": FieldType.STREET,
-        # "name": "Old Kent Road",
+        "name": "Old Kent Road",
         "color": StreetColor.BROWN,
         "full_set": ("brown_1", "brown_2"),
         "price": 60,
@@ -73,11 +79,12 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "cc_1",
         "type": FieldType.CC,
+        "name": "Community Chest",
     },  # 2
     {
         "index": "brown_2",
         "type": FieldType.STREET,
-        # "name": "Whitechapel Road",
+        "name": "Whitechapel Road",
         "color": StreetColor.BROWN,
         "full_set": ("brown_1", "brown_2"),
         "price": 60,
@@ -96,11 +103,13 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "tax_1",
         "type": FieldType.TAX,
+        "name": "Income Tax",
         "tax": 200
     },  # 4
     {
         "index": "railroad_1",
         "type": FieldType.RAILROAD,
+        "name": "Kings Cross Station",
         "full_set": ("railroad_1", "railroad_2", "railroad_3", "railroad_4"),
         "price": 200,
         "rent": 25,
@@ -113,7 +122,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "light_blue_1",
         "type": FieldType.STREET,
-        # "name": "The Angel, Islington",
+        "name": "The Angel, Islington",
         "color": StreetColor.LBLUE,
         "full_set": ("light_blue_1", "light_blue_2", "light_blue_3"),
         "price": 100,
@@ -131,12 +140,13 @@ FIELDS: list[FieldRecord] = [
     },  # 6
     {
         "index": "chance_1",
-        "type": FieldType.CHANCE
+        "type": FieldType.CHANCE,
+        "name": "Chance",
     },  # 7
     {
         "index": "light_blue_2",
         "type": FieldType.STREET,
-        # "name": "Euston Road",
+        "name": "Euston Road",
         "color": StreetColor.LBLUE,
         "full_set": ("light_blue_1", "light_blue_2", "light_blue_3"),
         "price": 100,
@@ -155,7 +165,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "light_blue_3",
         "type": FieldType.STREET,
-        # "name": "Pentonville Road",
+        "name": "Pentonville Road",
         "color": StreetColor.LBLUE,
         "full_set": ("light_blue_1", "light_blue_2", "light_blue_3"),
         "price": 120,
@@ -173,12 +183,13 @@ FIELDS: list[FieldRecord] = [
     },  # 9
     {
         "index": "just_visiting",
-        "type": FieldType.JUST_VISITING
+        "type": FieldType.JUST_VISITING,
+        "name": "Just Visiting",
     },  # 10
     {
         "index": "purple_1",
         "type": FieldType.STREET,
-        # "name": "Pall Mall",
+        "name": "Pall Mall",
         "color": StreetColor.PURPLE,
         "full_set": ("purple_1", "purple_2", "purple_3"),
         "price": 140,
@@ -197,6 +208,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "utility_1",
         "type": FieldType.UTILITY,
+        "name": "Electric Company",
         "full_set": ("utility_1", "utility_2"),
         "price": 150,
         "rent": 4,
@@ -207,7 +219,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "purple_2",
         "type": FieldType.STREET,
-        # "name": "Whitehall",
+        "name": "Whitehall",
         "color": StreetColor.PURPLE,
         "full_set": ("purple_1", "purple_2", "purple_3"),
         "price": 140,
@@ -226,7 +238,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "purple_3",
         "type": FieldType.STREET,
-        # "name": "Northumbld Avenue",
+        "name": "Northumbld Avenue",
         "color": StreetColor.PURPLE,
         "full_set": ("purple_1", "purple_2", "purple_3"),
         "price": 160,
@@ -245,6 +257,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "railroad_2",
         "type": FieldType.RAILROAD,
+        "name": "Marylebone Station",
         "full_set": ("railroad_1", "railroad_2", "railroad_3", "railroad_4"),
         "price": 200,
         "rent": 25,
@@ -257,7 +270,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "orange_1",
         "type": FieldType.STREET,
-        # "name": "Bow Street",
+        "name": "Bow Street",
         "color": StreetColor.ORANGE,
         "full_set": ("orange_1", "orange_2", "orange_3"),
         "price": 180,
@@ -275,12 +288,13 @@ FIELDS: list[FieldRecord] = [
     },  # 16
     {
         "index": "cc_2",
-        "type": FieldType.CC
+        "type": FieldType.CC,
+        "name": "Community Chest"
     },  # 17
     {
         "index": "orange_2",
         "type": FieldType.STREET,
-        # "name": "Marlborough Street",
+        "name": "Marlborough Street",
         "color": StreetColor.ORANGE,
         "full_set": ("orange_1", "orange_2", "orange_3"),
         "price": 180,
@@ -299,7 +313,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "orange_3",
         "type": FieldType.STREET,
-        # "name": "Vine Street",
+        "name": "Vine Street",
         "color": StreetColor.ORANGE,
         "full_set": ("orange_1", "orange_2", "orange_3"),
         "price": 200,
@@ -317,12 +331,13 @@ FIELDS: list[FieldRecord] = [
     },  # 19
     {
         "index": "free_parking",
-        "type": FieldType.FREE_PARKING
+        "type": FieldType.FREE_PARKING,
+        "name": "Free Parking"
     },  # 20
     {
         "index": "red_1",
         "type": FieldType.STREET,
-        # "name": "Strand",
+        "name": "Strand",
         "color": StreetColor.RED,
         "full_set": ("red_1", "red_2", "red_3"),
         "price": 220,
@@ -340,12 +355,13 @@ FIELDS: list[FieldRecord] = [
     },  # 21
     {
         "index": "chance_2",
-        "type": FieldType.CHANCE
+        "type": FieldType.CHANCE,
+        "name": "Chance"
     },  # 22
     {
         "index": "red_2",
         "type": FieldType.STREET,
-        # "name": "Fleet Street",
+        "name": "Fleet Street",
         "color": StreetColor.RED,
         "full_set": ("red_1", "red_2", "red_3"),
         "price": 220,
@@ -364,7 +380,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "red_3",
         "type": FieldType.STREET,
-        # "name": "Trafalgar Square",
+        "name": "Trafalgar Square",
         "color": StreetColor.RED,
         "full_set": ("red_1", "red_2", "red_3"),
         "price": 240,
@@ -383,6 +399,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "railroad_3",
         "type": FieldType.RAILROAD,
+        "name": "Fenchurch St. Station",
         "full_set": ("railroad_1", "railroad_2", "railroad_3", "railroad_4"),
         "price": 200,
         "rent": 25,
@@ -395,7 +412,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "yellow_1",
         "type": FieldType.STREET,
-        # "name": "Leicester Square",
+        "name": "Leicester Square",
         "color": StreetColor.YELLOW,
         "full_set": ("yellow_1", "yellow_2", "yellow_3"),
         "price": 260,
@@ -414,7 +431,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "yellow_2",
         "type": FieldType.STREET,
-        # "name": "Coventry Street",
+        "name": "Coventry Street",
         "color": StreetColor.YELLOW,
         "full_set": ("yellow_1", "yellow_2", "yellow_3"),
         "price": 260,
@@ -433,6 +450,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "utility_2",
         "type": FieldType.UTILITY,
+        "name": "Water Works",
         "full_set": ("utility_1", "utility_2"),
         "price": 150,
         "rent": 4,
@@ -443,7 +461,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "yellow_3",
         "type": FieldType.STREET,
-        # "name": "Piccadilly",
+        "name": "Piccadilly",
         "color": StreetColor.YELLOW,
         "full_set": ("yellow_1", "yellow_2", "yellow_3"),
         "price": 280,
@@ -461,12 +479,13 @@ FIELDS: list[FieldRecord] = [
     },  # 29
     {
         "index": "go_to_jail",
-        "type": FieldType.GO_TO_JAIL
+        "type": FieldType.GO_TO_JAIL,
+        "name": "Go To Jail"
     },  # 30
     {
         "index": "green_1",
         "type": FieldType.STREET,
-        # "name": "Regent Street",
+        "name": "Regent Street",
         "color": StreetColor.GREEN,
         "full_set": ("green_1", "green_2", "green_3"),
         "price": 300,
@@ -485,7 +504,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "green_2",
         "type": FieldType.STREET,
-        # "name": "Oxford Street",
+        "name": "Oxford Street",
         "color": StreetColor.GREEN,
         "full_set": ("green_1", "green_2", "green_3"),
         "price": 300,
@@ -503,12 +522,14 @@ FIELDS: list[FieldRecord] = [
     },  # 32
     {
         "index": "cc_3",
-        "type": FieldType.CC
+        "type": FieldType.CC,
+        "name": "Community Chest"
+
     },  # 33
     {
         "index": "green_3",
         "type": FieldType.STREET,
-        # "name": "Bond Street",
+        "name": "Bond Street",
         "color": StreetColor.GREEN,
         "full_set": ("green_1", "green_2", "green_3"),
         "price": 320,
@@ -527,6 +548,7 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "railroad_4",
         "type": FieldType.RAILROAD,
+        "name": "Liverpool St. Station",
         "full_set": ("railroad_1", "railroad_2", "railroad_3", "railroad_4"),
         "price": 200,
         "rent": 25,
@@ -538,12 +560,13 @@ FIELDS: list[FieldRecord] = [
     },  # 35
     {
         "index": "chance_3",
-        "type": FieldType.CHANCE
+        "type": FieldType.CHANCE,
+        "name": "Chance"
     },  # 36
     {
         "index": "dark_blue_1",
         "type": FieldType.STREET,
-        # "name": "Park Lane",
+        "name": "Park Lane",
         "color": StreetColor.DBLUE,
         "full_set": ("dark_blue_1", "dark_blue_2"),
         "price": 350,
@@ -562,11 +585,13 @@ FIELDS: list[FieldRecord] = [
     {
         "index": "tax_2",
         "type": FieldType.TAX,
+        "name": "Super Tax",
         "tax": 100
     },  # 38
     {
         "index": "dark_blue_2",
         "type": FieldType.STREET,
+        "name": "Mayfair",
         "color": StreetColor.DBLUE,
         "full_set": ("dark_blue_1", "dark_blue_2"),
         "price": 400,
@@ -584,7 +609,8 @@ FIELDS: list[FieldRecord] = [
     },  # 39
     {
         "index": "jail",
-        "type": FieldType.JAIL
+        "type": FieldType.JAIL,
+        "name": "Jail"
     }   # 40
 ]
 """ The list of all fields with their properties. """
