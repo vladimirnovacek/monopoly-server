@@ -1,7 +1,9 @@
+import typing
 from abc import ABC, abstractmethod
 
-from game_controller import GameController
 from interfaces import ClientMessage
+if typing.TYPE_CHECKING:
+    from game_controller import GameController
 
 
 class State(ABC):

@@ -4,8 +4,8 @@ from itertools import cycle
 from uuid import UUID
 
 from interfaces import ClientMessage
-from state import State
-from state import BeginTurnState
+from state.state import State
+from state.begin_turn import BeginTurnState
 
 
 class PreGameState(State):
