@@ -23,24 +23,29 @@ class PreGameState(State):
     def _send_initial_message(self, player_uuid: UUID) -> None:
         """
         Generates the initial message for the given player containing all necessary data from the game data.
-        The message is already pickled and ready to be sent.
+        The message is then sent.
         :param player_uuid: The UUID of the player.
         :type player_uuid: uuid.UUID
         :return: The initial message as bytes.
         :rtype: bytes
         """
         for record in self.controller.game_data.get_all_for_player(player_uuid):
-            self.controller.message.add(to=player_uuid, **record)
-        self.controller.message.add(to=player_uuid, section="events", item="possible_actions", value=self.get_possible_actions())
-        self.controller.message.send(player_uuid)
+            (self.controller.message
+                .add(to=player_uuid, **record)
+                .add(to=player_uuid, section="events", item="possible_actions", value=self.get_possible_actions())
+                .send(player_uuid)
+            )
 
     def _add_player(self, message: ClientMessage) -> None:
         if message["my_uuid"] != self.controller.server_uuid:
+            ''' The server should only be able to add other players. '''
+            logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
             return
         parameters = message["parameters"]
         self.controller.game_data.add_player(parameters["player_uuid"], parameters["player_id"])
         self._send_initial_message(parameters["player_uuid"])
         self._broadcast_changes()
+        logging.info(f"Player {parameters['player_uuid']} added.")
 
     def _update_user(self, message: ClientMessage):
         player = self.controller.game_data["players"][message["my_uuid"]]
@@ -54,8 +59,10 @@ class PreGameState(State):
     def _start_game(self):
         game_data = self.controller.game_data
         if not game_data.is_all_players_ready():
+            logging.warning("Not all players are ready.")
             return
         if len(game_data.players) < 2:
+            logging.warning("Not enough players.")
             return
         game_data.update(section="misc", item="state", value="begin_turn")
         game_data.set_initial_values()
@@ -68,3 +75,4 @@ class PreGameState(State):
         self.controller.message.server.locked = True
         self._change_state(BeginTurnState(self.controller))
         self._broadcast_changes()
+        logging.info("Game started.")
