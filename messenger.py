@@ -22,6 +22,7 @@ class Messenger:
         self.server: ServerFactory | None = None
         """ The server. Due to cross-referencing is initially None. Has to be set by the set_server() method. """
         self._messages = []
+        self._private_messages = {}
 
     def set_server(self, server: "ServerFactory") -> None:
         """
@@ -44,29 +45,37 @@ class Messenger:
             message = pickle.loads(message)
         self.controller.parse(message)
 
-    def add(self, **kwargs: Any) -> Self:
+    def add(self, to: str | UUID = "all", **kwargs: Any) -> Self:
         """
         Adds the given message to the message queue.
+        :param to: The UUID of the player or "all" for all players.
+        :type to: UUID | str
         :param kwargs: Allowed keys are: section, item, attribute, value
         :type kwargs: Any
         :return: The current instance so that methods can be chained.
         :rtype: Self
         """
-        self._messages.append(kwargs)
+        if to == "all":
+            self._messages.append(kwargs)
+        else:
+            if to not in self._private_messages:
+                self._private_messages[to] = []
+            self._private_messages[to].append(kwargs)
         return self
 
-    def get(self) -> bytes:
+    def get(self, player: UUID | None = None) -> bytes:
         """
         Returns the current message queue ready to send. The queue is emptied.
         :return: The current message queue pickled.
         :rtype: bytes
         """
+        messages = []
         if self._messages:
-            data = pickle.dumps(self._messages)
-            self._messages.clear()
-            return data
-        else:
-            return b""
+            messages.extend(self._messages)
+        if player is not None and player in self._private_messages:
+            messages.extend(self._private_messages[player])
+            self._private_messages[player].clear()
+        return pickle.dumps(messages) if messages else b""
 
     def send(self, uuid: UUID, data: bytes | None = None) -> None:
         """
@@ -78,7 +87,7 @@ class Messenger:
         :type data: bytes | None
         """
         if data is None:  # Nothing was given by parameter
-            data = self.get()
+            data = self.get(uuid)
             if data is None:  # There is nothing to send at all
                 return
         self.server.send(uuid, data)
@@ -90,8 +99,11 @@ class Messenger:
         :param data: The data to be sent.
         :type data: bytes | None
         """
-        if data is None:  # Nothing was given by parameter
-            data = self.get()
-            if not data:  # There is nothing to send at all
-                return
-        self.server.broadcast(data)
+        if data is None:
+            for player in self.server.connected_clients:
+                data = self.get(player)
+                if data is not None:
+                    self.server.send(player, data)
+            self._messages.clear()
+        else:
+            self.server.broadcast(data)
