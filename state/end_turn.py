@@ -3,8 +3,10 @@ from state.state import State
 
 
 class EndTurnState(State):
-    def get_possible_actions(self) -> set[str]:
-        return {"end_turn"}
+    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
+        if on_turn:
+            return {"end_turn"}
+        return set()
 
     def parse(self, message: ClientMessage):
         game_data = self.controller.game_data

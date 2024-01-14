@@ -4,8 +4,10 @@ from state.end_turn import EndTurnState
 
 
 class BeginTurnState(State):
-    def get_possible_actions(self) -> set[str]:
-        return {"roll"}
+    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
+        if on_turn:
+            return {"roll"}
+        return set()
 
     def parse(self, message: ClientMessage):
         if message["action"] == "roll" and self.controller.game_data.is_player_on_turn(message["my_uuid"]):

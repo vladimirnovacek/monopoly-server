@@ -9,7 +9,7 @@ from state.begin_turn import BeginTurnState
 
 
 class PreGameState(State):
-    def get_possible_actions(self) -> set[str]:
+    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
         return {"add_player", "user_info", "start_game"}
 
     def parse(self, message: ClientMessage):

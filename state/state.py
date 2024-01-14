@@ -1,3 +1,4 @@
+import logging
 import typing
 from abc import ABC, abstractmethod
 
@@ -15,7 +16,7 @@ class State(ABC):
         ...
 
     @abstractmethod
-    def get_possible_actions(self) -> set[str]:
+    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
         ...
 
     def _broadcast_changes(self):
@@ -24,7 +25,12 @@ class State(ABC):
         self.controller.message.broadcast()
 
     def _change_state(self, state: "State"):
-        self.controller.game_data.update(
-            section="events", item="possible_actions", value=state.get_possible_actions()
-        )
+        game_data = self.controller.game_data
+        on_turn = game_data.uuid_from_id(game_data.get_value(section="misc", item="on_turn"))
+        for player in game_data.players:
+            self.controller.game_data.update(
+                section="players", item=player, attribute="possible_actions",
+                value=state.get_possible_actions(player is on_turn)
+            )
         self.controller.state = state
+        logging.debug(f"Changed state to {state}.")
