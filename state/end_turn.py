@@ -14,3 +14,4 @@ class EndTurnState(State):
             from state.begin_turn import BeginTurnState
             game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
             self._change_state(BeginTurnState(self.controller))
+            self._broadcast_changes()
