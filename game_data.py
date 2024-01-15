@@ -142,6 +142,8 @@ class GameData:
         """
         while self._changes:
             change = self.get(*self._changes.pop())
+            if change["section"] == "players" and change["attribute"] == "possible_actions":
+                change["to"] = change["item"]
             if change["section"] == "events":
                 del self.events[change["item"]]
             if for_client:
