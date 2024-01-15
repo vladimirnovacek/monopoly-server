@@ -30,11 +30,10 @@ class PreGameState(State):
         :rtype: bytes
         """
         for record in self.controller.game_data.get_all_for_player(player_uuid):
-            (self.controller.message
-                .add(to=player_uuid, **record)
-                .add(to=player_uuid, section="events", item="possible_actions", value=self.get_possible_actions())
-                .send(player_uuid)
-            )
+            self.controller.message.add(to=player_uuid, **record)
+        (self.controller.message
+            .add(to=player_uuid, section="events", item="possible_actions", value=self.get_possible_actions())
+            .send(player_uuid))
 
     def _add_player(self, message: ClientMessage) -> None:
         if message["my_uuid"] != self.controller.server_uuid:

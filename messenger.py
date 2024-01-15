@@ -102,7 +102,7 @@ class Messenger:
         if data is None:
             for player in self.server.connected_clients:
                 data = self.get(player)
-                if data is not None:
+                if data:
                     self.server.send(player, data)
             self._messages.clear()
         else:
