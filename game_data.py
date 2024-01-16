@@ -49,6 +49,14 @@ class GameData:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.__dict__})"
 
+    @property
+    def on_turn(self) -> int:
+        return self.get_value("misc", "on_turn")
+
+    @property
+    def on_turn_uuid(self) -> UUID:
+        return self.uuid_from_id(self.on_turn)
+
     def add_player(self, player_uuid: UUID, player_id):
         new_player = Player(
             player_id=player_id,
