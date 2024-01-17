@@ -5,6 +5,7 @@ from typing import TypedDict, Any, Iterable
 
 import config
 from board import BoardData
+from players import Players
 
 
 class Field(TypedDict, total=False):
@@ -12,15 +13,6 @@ class Field(TypedDict, total=False):
     owner: int
     houses: int
     mortgage: bool
-
-
-class Player(TypedDict, total=False):
-    player_id: int
-    name: str
-    token: str
-    cash: int
-    field_id: int
-    ready: bool
 
 
 class Misc(TypedDict, total=False):
@@ -34,7 +26,7 @@ class GameData:
 
     def __init__(self):
         self.fields: BoardData = BoardData()
-        self.players: dict[UUID, Player] = {}
+        self.players: Players = Players(self)
         self.misc: Misc = {"state": "pregame"}
         self.events = {}
         self._changes: set[tuple] = set()
@@ -58,18 +50,7 @@ class GameData:
         return self.uuid_from_id(self.on_turn)
 
     def add_player(self, player_uuid: UUID, player_id):
-        new_player = Player(
-            player_id=player_id,
-            name=f"Player {player_id + 1}",
-            token="",
-            cash=0,
-            field_id=-1,
-            ready=False
-        )
-        self.players[player_uuid] = Player()
-        for key, value in new_player.items():
-            self.update(section="players", item=player_uuid, attribute=key, value=value)
-        return {player_uuid: self.players[player_uuid]}
+        self.players.add_player(player_uuid, player_id)
 
     def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
         """
@@ -89,13 +70,19 @@ class GameData:
             return
         if section == "fields":
             self.fields.update(item=item, attribute=attribute, value=value)
-            self._changes.add((section, item, attribute, value))
+            self.add_change(section, item, attribute, value)
+        elif section == "players":
+            self.players.update(item=item, attribute=attribute, value=value)
+            self.add_change(section, item, attribute, value)
         elif attribute is not None:
             self[section][item][attribute] = value
-            self._changes.add((section, item, attribute))
+            self.add_change(section, item, attribute)
         else:
             self[section][item] = value
-            self._changes.add((section, item))
+            self.add_change(section, item)
+
+    def add_change(self, *args):
+        self._changes.add(args)
 
     def get_value(self, section: str, item: str | int | UUID, attribute: str | None = None) -> Any:
         """
@@ -202,7 +189,7 @@ class GameData:
         return data
 
     def is_all_players_ready(self):
-        return all([player["ready"] and player["token"] for player in self.players.values()])
+        return self.players.is_all_ready()
 
     def set_initial_values(self):
         for player in self.players:
@@ -210,12 +197,10 @@ class GameData:
             self.update(section="players", item=player, attribute="field", value=config.initial_field)
 
     def id_from_uuid(self, player_uuid: UUID) -> int:
-        return self.players[player_uuid]["player_id"]
+        return self.players.id_from_uuid(player_uuid)
 
     def uuid_from_id(self, player_id: int) -> UUID:
-        for player_uuid, player in self.players.items():
-            if player["player_id"] == player_id:
-                return player_uuid
+        return self.players.uuid_from_id(player_id)
 
     def is_player_on_turn(self, player_uuid: UUID) -> bool:
         return player_uuid == self.uuid_from_id(self.get_value("misc", "on_turn"))
