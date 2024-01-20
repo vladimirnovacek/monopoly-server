@@ -26,7 +26,7 @@ class State(ABC):
 
     def _change_state(self, state: "State"):
         game_data = self.controller.game_data
-        on_turn = game_data.uuid_from_id(game_data.get_value(section="misc", item="on_turn"))
+        on_turn = game_data.players.uuid_from_id(game_data.get_value(section="misc", item="on_turn"))
         for player in game_data.players:
             self.controller.game_data.update(
                 section="players", item=player, attribute="possible_actions",

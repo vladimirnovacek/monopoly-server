@@ -8,13 +8,6 @@ from board import BoardData
 from players import Players
 
 
-class Field(TypedDict, total=False):
-    field_id: int
-    owner: int
-    houses: int
-    mortgage: bool
-
-
 class Misc(TypedDict, total=False):
     on_turn: int
     last_roll: tuple
@@ -26,9 +19,8 @@ class GameData:
 
     def __init__(self):
         self.fields: BoardData = BoardData()
-        self.players: Players = Players(self)
+        self.players: Players = Players()
         self.misc: Misc = {"state": "pregame"}
-        self.events = {}
         self._changes: set[tuple] = set()
         self.player_order_cycler: cycle | None = None
 
@@ -47,10 +39,7 @@ class GameData:
 
     @property
     def on_turn_uuid(self) -> UUID:
-        return self.uuid_from_id(self.on_turn)
-
-    def add_player(self, player_uuid: UUID, player_id):
-        self.players.add_player(player_uuid, player_id)
+        return self.players.uuid_from_id(self.on_turn)
 
     def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
         """
@@ -74,6 +63,8 @@ class GameData:
         elif section == "players":
             self.players.update(item=item, attribute=attribute, value=value)
             self.add_change(section, item, attribute, value)
+        elif section == "events":
+            self.add_change(section, item, value)
         elif attribute is not None:
             self[section][item][attribute] = value
             self.add_change(section, item, attribute)
@@ -139,11 +130,9 @@ class GameData:
             change = self.get(*self._changes.pop())
             if change["section"] == "players" and change["attribute"] == "possible_actions":
                 change["to"] = change["item"]
-            if change["section"] == "events":
-                del self.events[change["item"]]
             if for_client:
                 if change["section"] == "players":
-                    change["item"] = self.id_from_uuid(change["item"])
+                    change["item"] = self.players.id_from_uuid(change["item"])
             yield change
 
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
@@ -188,19 +177,10 @@ class GameData:
                     data.add({"section": section, "item": item, "value": value})
         return data
 
-    def is_all_players_ready(self):
-        return self.players.is_all_ready()
-
     def set_initial_values(self):
         for player in self.players:
             self.update(section="players", item=player, attribute="cash", value=config.initial_cash)
             self.update(section="players", item=player, attribute="field", value=config.initial_field)
 
-    def id_from_uuid(self, player_uuid: UUID) -> int:
-        return self.players.id_from_uuid(player_uuid)
-
-    def uuid_from_id(self, player_id: int) -> UUID:
-        return self.players.uuid_from_id(player_id)
-
     def is_player_on_turn(self, player_uuid: UUID) -> bool:
-        return player_uuid == self.uuid_from_id(self.get_value("misc", "on_turn"))
+        return player_uuid == self.players.uuid_from_id(self.get_value("misc", "on_turn"))

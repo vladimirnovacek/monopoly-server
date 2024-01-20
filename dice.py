@@ -1,3 +1,5 @@
+# -*- tests-case-name: tests.test_dice -*-
+
 from random import randint
 
 
@@ -8,10 +10,10 @@ class Roll:
     """
 
     def __init__(self, count: int, sides: int):
-        self.dice: tuple[int, ...] = tuple(randint(1, sides) for _ in range(count))
+        self._roll: tuple[int, ...] = tuple(randint(1, sides) for _ in range(count))
 
     def __getitem__(self, item) -> int:
-        return self.dice[item]
+        return self._roll[item]
 
     def sum(self) -> int:
         """
@@ -19,7 +21,7 @@ class Roll:
         :return: The sum of all the dice.
         :rtype: int
         """
-        return sum(self.dice)
+        return sum(self._roll)
 
     def get(self) -> tuple[int, ...]:
         """
@@ -27,7 +29,7 @@ class Roll:
         :return: The roll as a tuple of individual dice.
         :rtype: tuple[int, ...]
         """
-        return self.dice
+        return self._roll
 
     def is_double(self) -> bool:
         """
@@ -35,7 +37,9 @@ class Roll:
         :return: True if all the dice are equal.
         :rtype: bool
         """
-        return all(i == self.dice for i in self.dice)
+        if len(self._roll) < 2:
+            return False
+        return all(i == self._roll[0] for i in self._roll[1:])
 
 
 class Dice:
@@ -66,6 +70,7 @@ class Dice:
         :rtype:
         """
         self.doubles = 0
+        self.last_roll = None
 
     def roll(self, register=True) -> Roll:
         """

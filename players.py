@@ -6,9 +6,8 @@ if TYPE_CHECKING:
 
 class Player:
     def __init__(
-            self, game_data: "GameData",player_uuid: UUID,  player_id: int, name: str = None,
+            self, player_uuid: UUID,  player_id: int, name: str = None,
             token: str = "", cash: int = 0, field: int = -1, ready: bool = False):
-        self.gd = game_data
         self.player_id: int = player_id
         self.player_uuid: UUID = player_uuid
         self.name: str = f"Player {self.player_id + 1}" if name is None else name
@@ -26,22 +25,28 @@ class Player:
 
 
 class Players:
-    def __init__(self, game_data: "GameData"):
-        self.gd: GameData = game_data
+    def __init__(self):
         self._players: dict[UUID, Player] = {}
+
+    def __getitem__(self, item):
+        return self._players[item]
+
+    def __len__(self):
+        return len(self._players)
 
     def __iter__(self):
         return iter(self._players)
 
     def update(self, item: UUID, attribute: str, value: Any) -> None:
+        if not hasattr(self._players[item], attribute):
+            raise AttributeError(f"Player object has no attribute {attribute}.")
         player = self._players[item]
         setattr(player, attribute, value)
 
-    def add_player(self, player_uuid: UUID, player_id: int):
-        new_player = Player(self.gd, player_uuid, player_id)
+    def add(self, player_uuid: UUID, player_id: int):
+        new_player = Player(player_uuid, player_id)
         self._players[new_player.player_uuid] = new_player
-        for attr in new_player.attributes:
-            self.gd.add_change("players", new_player.player_uuid, attr, getattr(new_player, attr))
+        return new_player
 
     def is_all_ready(self):
         return all(player.ready and player.token for player in self._players.values())

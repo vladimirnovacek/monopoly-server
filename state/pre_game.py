@@ -41,7 +41,7 @@ class PreGameState(State):
             logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
             return
         parameters = message["parameters"]
-        self.controller.game_data.add_player(parameters["player_uuid"], parameters["player_id"])
+        self.controller.game_data.players.add(parameters["player_uuid"], parameters["player_id"])
         self._send_initial_message(parameters["player_uuid"])
         self._broadcast_changes()
         logging.info(f"Player {parameters['player_uuid']} added.")
@@ -57,7 +57,7 @@ class PreGameState(State):
 
     def _start_game(self):
         game_data = self.controller.game_data
-        if not game_data.is_all_players_ready():
+        if not game_data.players.is_all_ready():
             logging.warning("Not all players are ready.")
             return
         if len(game_data.players) < 2:
