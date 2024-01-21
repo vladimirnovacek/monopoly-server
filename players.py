@@ -23,6 +23,10 @@ class Player:
     def attributes(self):
         return "player_id", "name", "token", "cash", "field", "ready"
 
+    @property
+    def attr_dict(self) -> dict[str, Any]:
+        return {attr: getattr(self, attr) for attr in self.attributes}
+
 
 class Players:
     def __init__(self):

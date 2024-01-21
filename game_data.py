@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from itertools import cycle
 from uuid import UUID
-from typing import TypedDict, Any, Iterable
+from typing import TypedDict, Any
 
 import config
 from board import BoardData
@@ -21,7 +21,7 @@ class GameData:
         self.fields: BoardData = BoardData()
         self.players: Players = Players()
         self.misc: Misc = {"state": "pregame"}
-        self._changes: set[tuple] = set()
+        self._changes: list[tuple] = []
         self.player_order_cycler: cycle | None = None
 
     def __getitem__(self, item):
@@ -67,13 +67,19 @@ class GameData:
             self.add_change(section, item, value)
         elif attribute is not None:
             self[section][item][attribute] = value
-            self.add_change(section, item, attribute)
+            self.add_change(section, item, attribute, value)
         else:
             self[section][item] = value
-            self.add_change(section, item)
+            self.add_change(section, item, value)
 
-    def add_change(self, *args):
-        self._changes.add(args)
+    def add_change(self, *args, **kwargs) -> None:
+        if kwargs:
+            largs = list(args)
+            largs.extend(kwargs.values())
+            args = tuple(largs)
+        if args in self._changes or not args:
+            return
+        self._changes.append(args)
 
     def get_value(self, section: str, item: str | int | UUID, attribute: str | None = None) -> Any:
         """
@@ -89,31 +95,31 @@ class GameData:
         """
         try:
             return self[section][item][attribute] if attribute else self[section][item]
-        except (KeyError, IndexError):
+        except (KeyError, IndexError, AttributeError):
             return None
 
-    def get(self, section: str, item: str | int | UUID, attribute: str | None = None, value: Any = None) -> dict:
+    def get(self, *args, **kwargs) -> dict | None:
         """
-        Retrieves data for a specific item in a format that can be used by the messenger.
-        :param section:
-        :type section: str
-        :param item:
-        :type item: str | UUID
-        :param attribute:
-        :type attribute: str | None
-        :param value:
-        :type value: Any
+        Retrieves data for a specific item in a dict format that can be used by the messenger. Returns None if there
+        is no such item.
+        :param args:
+        :param kwargs:
         :return:
-        :rtype: dict
+        :rtype: dict | None
         """
-        keys = (section, item, attribute) if attribute else (section, item)
-        if not value:
-            value = self.get_value(*keys)
-        if type(value) not in (int, str, tuple):
-            value = str(value)
-        record = {"section": section, "item": item, "value": value}
-        if attribute:
-            record["attribute"] = attribute
+        if kwargs:
+            if "value" not in kwargs:
+                kwargs["value"] = self.get_value(**kwargs)
+            args = tuple(list(args) + list(kwargs.values()))
+        if len(args) == 4:
+            keys = ("section", "item", "attribute", "value")
+        elif len(args) == 3:
+            keys = ("section", "item", "value")
+        else:
+            return
+        record = {key: value for key, value in zip(keys, args)}
+        if type(record["value"]) not in (int, str, tuple):
+            record["value"] = str(record["value"])
         return record
 
     def get_changes(self, for_client: bool = True) -> Iterator[dict]:
@@ -136,45 +142,36 @@ class GameData:
             yield change
 
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
-        """ TODO change docstring format
-        Retrieves all data for a specific player in a format that can be used by the message factory.
-        Args:
-            player_uuid (uuid.UUID): The UUID of the player.
-        Returns:
-            list[dict]: A list of dictionaries containing the retrieved data for the player.
+        """
+        Retrieves all data for a specific player in a format that can be used by the message factory. This method is
+        meant to be used when a player is connected to the server to retrieve all data at once.
+        :param player_uuid: The UUID of the player.
+        :type player_uuid: UUID
+        :return: A list of dictionaries containing the retrieved data for the player.
+        :rtype: list[dict]
         """
         data = list()
-        # Following data is stored in a different location on the player's side.
+        # Following data is stored in a different location on the player's side, so it has to be reformatted.
         data.append({"section": "misc", "item": "my_uuid", "value": player_uuid})
         player_id = self.get_value("players", player_uuid, "player_id")
         data.append({"section": "misc", "item": "my_id", "value": player_id})
-        # Retrieve data from sections "fields" and "misc".
+        # Retrieve data from "fields" section
+        # General board data are sent as "fields" with item == -1
         data.append({"section": "fields", "item": -1, "attribute": "lenght", "value": len(self.fields)})
         for i, field in enumerate(self.fields):
             for attribute in field:
                 data.append(self.get("fields", i, attribute, getattr(field, attribute)))
+        # Retrieve data from "misc" section
         for item in self.misc:
-            data.append(self.get("misc", item))
+            data.append(self.get("misc", item, self.get_value("misc", item)))
         # Retrieve data from section "players". It is done separately because
-        # we don't want to send uuids of other players.
+        # we don't want to send uuids of other players so we have to replace them with their ids.
         for item in self["players"]:
-            player_id = self["players"][item]["player_id"]
-            for attribute in self["players"][item]:
-                value = self.get_value("players", item, attribute)
-                data.append({"section": "players", "item": player_id, "attribute": attribute, "value": value})
-        return data
-
-    def get_all(self) -> set[dict]:
-        data = set()
-        for section in ("fields", "players", "misc"):
-            for item in self[section]:
-                if isinstance(Iterable, self[section][item]):
-                    for attribute in self[section][item]:
-                        value = self.get(section, item, attribute)
-                        data.add({"section": section, "item": item, "attribute": attribute, "value": value})
-                else:
-                    value = self.get(section, item)
-                    data.add({"section": section, "item": item, "value": value})
+            player_id = self.get_value("players", item, "player_id")
+            for attribute, value in self.players[item].attr_dict.items():
+                date = self.get("players", item, attribute, value)
+                date["item"] = player_id
+                data.append(date)
         return data
 
     def set_initial_values(self):
