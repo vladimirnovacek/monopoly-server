@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Protocol, Self, TypedDict
 from uuid import UUID
 
@@ -27,3 +28,22 @@ class Parser(Protocol):
 
     def parse(self, data):
         ...
+
+
+class Data(ABC):
+    pass
+
+
+class Controller(ABC):
+    def __init__(self, game_data: Data):
+        self.game_data: Data = game_data
+
+    @abstractmethod
+    def parse(self, message: ClientMessage):
+        pass
+
+
+
+class IServer(ABC):
+    def __init__(self):
+        self.server_uuid: UUID = UUID()

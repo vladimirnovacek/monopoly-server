@@ -3,8 +3,7 @@ import pickle
 from typing import Self, TYPE_CHECKING, Any
 from uuid import UUID
 
-from game_controller import GameController
-from interfaces import ClientMessage
+from interfaces import ClientMessage, Controller, IServer
 
 if TYPE_CHECKING:
     from server import ServerFactory
@@ -15,8 +14,8 @@ class Messenger:
     The messenger is responsible for sending and receiving data to and from the server. After creating the messenger, it
     is necessary to set the server using the set_server() method.
     """
-    def __init__(self, controller: GameController):
-        self.controller: GameController = controller
+    def __init__(self, controller: Controller):
+        self.controller: Controller = controller
         """ The controller. """
         self.controller.message = self  # Due to cross-referencing cannot be set in controller's __init__.
         self.server: ServerFactory | None = None
@@ -24,7 +23,7 @@ class Messenger:
         self._messages = []
         self._private_messages = {}
 
-    def set_server(self, server: "ServerFactory") -> None:
+    def set_server(self, server: IServer) -> None:
         """
         Sets the server.
         :param server: The server.
@@ -34,8 +33,8 @@ class Messenger:
         self.controller.server_uuid = self.server.server_uuid
 
     def receive(self, message: ClientMessage | bytes) -> None:
-        """ TODO update docstring
-        Parses the given message and updates the game data.
+        """
+        Passes the message to the controller. If the message is a bytes object, it is deserialized first.
         :param message: The message to be parsed.
         :type message: dict | bytes
         :return: None
@@ -63,34 +62,35 @@ class Messenger:
             self._private_messages[to].append(kwargs)
         return self
 
-    def get(self, player: UUID | None = None) -> bytes:
+    def get(self, player_uuid: UUID) -> bytes:
         """
-        Returns the current message queue ready to send. The queue is emptied.
+        Returns the current message queue ready to send. The private queue is emptied.
+        :param player_uuid: The UUID of the player.
+        :type player_uuid: UUID
         :return: The current message queue pickled.
         :rtype: bytes
         """
         messages = []
         if self._messages:
             messages.extend(self._messages)
-        if player is not None and player in self._private_messages:
-            messages.extend(self._private_messages[player])
-            self._private_messages[player].clear()
+        if player_uuid in self._private_messages:
+            messages.extend(self._private_messages[player_uuid])
+            self._private_messages[player_uuid].clear()
         return pickle.dumps(messages) if messages else b""
 
-    def send(self, uuid: UUID, data: bytes | None = None) -> None:
+    def send(self, player_uuid: UUID, data: bytes | None = None) -> None:
         """
         Sends the given data to the given player. If no data is given, the current message queue is sent. The queue is
         emptied.
-        :param uuid: The UUID of the player.
-        :type uuid: UUID
+        :param player_uuid: The UUID of the player.
+        :type player_uuid: UUID
         :param data: The data to be sent.
         :type data: bytes | None
         """
-        if data is None:  # Nothing was given by parameter
-            data = self.get(uuid)
-            if data is None:  # There is nothing to send at all
-                return
-        self.server.send(uuid, data)
+        if data is None:
+            data = self.get(player_uuid)
+        if data:
+            self.server.send(player_uuid, data)
 
     def broadcast(self, data: bytes | None = None) -> None:
         """
@@ -100,10 +100,10 @@ class Messenger:
         :type data: bytes | None
         """
         if data is None:
-            for player in self.server.connected_clients:
-                data = self.get(player)
+            for player_uuid in self.server.connected_clients:
+                data = self.get(player_uuid)
                 if data:
-                    self.server.send(player, data)
+                    self.server.send(player_uuid, data)
             self._messages.clear()
         else:
             self.server.broadcast(data)
