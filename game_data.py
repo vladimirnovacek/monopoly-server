@@ -5,6 +5,7 @@ from typing import TypedDict, Any
 
 import config
 from board import BoardData
+from interfaces import IData
 from players import Players
 
 
@@ -15,7 +16,7 @@ class Misc(TypedDict, total=False):
     state: str
 
 
-class GameData:
+class GameData(IData):
 
     def __init__(self):
         self.fields: BoardData = BoardData()

@@ -4,6 +4,7 @@ from typing import ClassVar, Optional, Any
 from uuid import UUID
 
 from board_description import FIELDS, FieldType, FieldRecord
+from interfaces import IFields
 
 
 class Field:
@@ -134,7 +135,7 @@ class Field:
         return bool(self.type & FieldType.NONACTIVE)
 
 
-class BoardData:
+class BoardData(IFields):
     """
     BoardData represents the immutable data of the board and contains the fields.
     """

@@ -1,12 +1,11 @@
 import pickle
-import sys
 
 import uuid
 
 from twisted.internet.protocol import Protocol, Factory, connectionDone
 from twisted.python import failure
 
-from messenger import Messenger
+from interfaces import IServer, IMessenger
 
 
 class Server(Protocol):
@@ -53,13 +52,13 @@ class Server(Protocol):
         print(f"Sent to {self.player_uuid}: {pickle.loads(data)}")
         self.transport.write(data)
 
-class ServerFactory(Factory):
+class ServerFactory(Factory, IServer):
 
     protocol = Server
 
-    def __init__(self, messenger: Messenger):
+    def __init__(self, messenger: IMessenger):
         self.server_uuid = uuid.uuid4()
-        self.messenger: Messenger = messenger
+        self.messenger: IMessenger = messenger
         self.messenger.set_server(self)
         self.connected_clients: dict[uuid.UUID, Server] = dict()
         self.available_ids: set[int] = set(range(4))

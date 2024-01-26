@@ -1,14 +1,11 @@
 import logging
-import typing
 from abc import ABC, abstractmethod
 
-from interfaces import ClientMessage
-if typing.TYPE_CHECKING:
-    from game_controller import GameController
+from interfaces import ClientMessage, IController
 
 
 class State(ABC):
-    def __init__(self, controller: "GameController"):
+    def __init__(self, controller: IController):
         self.controller = controller
 
     @abstractmethod

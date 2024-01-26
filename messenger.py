@@ -3,19 +3,19 @@ import pickle
 from typing import Self, TYPE_CHECKING, Any
 from uuid import UUID
 
-from interfaces import ClientMessage, Controller, IServer
+from interfaces import ClientMessage, IController, IServer, IMessenger
 
 if TYPE_CHECKING:
     from server import ServerFactory
 
 
-class Messenger:
+class Messenger(IMessenger):
     """
     The messenger is responsible for sending and receiving data to and from the server. After creating the messenger, it
     is necessary to set the server using the set_server() method.
     """
-    def __init__(self, controller: Controller):
-        self.controller: Controller = controller
+    def __init__(self, controller: IController):
+        self.controller: IController = controller
         """ The controller. """
         self.controller.message = self  # Due to cross-referencing cannot be set in controller's __init__.
         self.server: ServerFactory | None = None
@@ -25,7 +25,7 @@ class Messenger:
 
     def set_server(self, server: IServer) -> None:
         """
-        Sets the server.
+        Sets the server. Sets also the server_uuid in the controller.
         :param server: The server.
         :type server: ServerFactory
         """

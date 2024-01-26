@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
-if TYPE_CHECKING:
-    from game_data import GameData
+from interfaces import IPlayers, IPlayer
 
-class Player:
+
+class Player(IPlayer):
     def __init__(
             self, player_uuid: UUID,  player_id: int, name: str = None,
             token: str = "", cash: int = 0, field: int = -1, ready: bool = False):
@@ -28,7 +28,7 @@ class Player:
         return {attr: getattr(self, attr) for attr in self.attributes}
 
 
-class Players:
+class Players(IPlayers):
     def __init__(self):
         self._players: dict[UUID, Player] = {}
 
@@ -47,7 +47,7 @@ class Players:
         player = self._players[item]
         setattr(player, attribute, value)
 
-    def add(self, player_uuid: UUID, player_id: int):
+    def add(self, player_uuid: UUID, player_id: int) -> Player:
         new_player = Player(player_uuid, player_id)
         self._players[new_player.player_uuid] = new_player
         return new_player

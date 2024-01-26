@@ -2,8 +2,10 @@
 
 from random import randint
 
+from interfaces import IDice, IRoll
 
-class Roll:
+
+class Roll(IRoll):
     """
     Class represents a roll of dice. Access particlar dice using the index,
     e.g. Roll[0] returns the first dice.
@@ -42,7 +44,7 @@ class Roll:
         return all(i == self._roll[0] for i in self._roll[1:])
 
 
-class Dice:
+class Dice(IDice):
 
     def __init__(self, count: int = 2, sides: int = 6):
         self.last_roll: Roll | None = None
