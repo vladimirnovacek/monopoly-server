@@ -11,10 +11,13 @@ class Player(IPlayer):
         self.player_id: int = player_id
         self.player_uuid: UUID = player_uuid
         self.name: str = f"Player {self.player_id + 1}" if name is None else name
-        self.token = token
-        self.cash = cash
-        self.field = field
-        self.ready = ready
+        self.token: str = token
+        self.cash: int = cash
+        self.field: int = field
+        self.ready: bool = ready
+        self.in_jail: bool = False
+        self.jail_turns: int = 0
+        self.get_out_of_jail_cards: int = 0
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -32,8 +35,17 @@ class Players(IPlayers):
     def __init__(self):
         self._players: dict[UUID, Player] = {}
 
-    def __getitem__(self, item):
-        return self._players[item]
+    def __getitem__(self, item: UUID | int) -> Player:
+        if type(item) is UUID:
+            if item in self._players:
+                return self._players[item]
+            raise KeyError(f"Player with uuid {item} was not found.")
+        if type(item) is int:
+            matching = filter(lambda player: player.player_id == item, self._players.values())
+            if len(matching) == 1:
+                return next(matching)
+            raise KeyError(f"Player with id {item} was not found.")
+        raise AttributeError(f"{item} has to be of type UUID or int.")
 
     def __len__(self):
         return len(self._players)

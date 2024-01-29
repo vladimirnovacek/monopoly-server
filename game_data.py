@@ -6,7 +6,7 @@ from typing import TypedDict, Any
 import config
 from board import BoardData
 from interfaces import IData
-from players import Players
+from players import Players, Player
 
 
 class Misc(TypedDict, total=False):
@@ -41,6 +41,10 @@ class GameData(IData):
     @property
     def on_turn_uuid(self) -> UUID:
         return self.players.uuid_from_id(self.on_turn)
+
+    @property
+    def on_turn_player(self) -> Player:
+        return self.players[self.on_turn_uuid]
 
     def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
         """

@@ -77,14 +77,14 @@ class Dice(IDice):
     def roll(self, register=True) -> Roll:
         """
         Rolls the dice.
-        :param register: If True, the roll will be stored in the last_roll attribute and counts toward doubles.
+        :param register: If True, the roll counts toward doubles.
         :type register: bool
         :return: Roll object
         :rtype: Roll
         """
         roll = Roll(self.count, self.sides)
+        self.last_roll = roll
         if register:
-            self.last_roll = roll
             if roll.is_double():
                 self.doubles += 1
             else:

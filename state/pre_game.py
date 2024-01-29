@@ -29,7 +29,7 @@ class PreGameState(State):
         :return: The initial message as bytes.
         :rtype: bytes
         """
-        for record in self.controller.game_data.get_all_for_player(player_uuid):
+        for record in self.controller.gd.get_all_for_player(player_uuid):
             self.controller.message.add(to=player_uuid, **record)
         (self.controller.message
             .add(to=player_uuid, section="events", item="possible_actions", value=self.get_possible_actions())
@@ -41,22 +41,22 @@ class PreGameState(State):
             logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
             return
         parameters = message["parameters"]
-        self.controller.game_data.players.add(parameters["player_uuid"], parameters["player_id"])
+        self.controller.gd.players.add(parameters["player_uuid"], parameters["player_id"])
         self._send_initial_message(parameters["player_uuid"])
         self._broadcast_changes()
         logging.info(f"Player {parameters['player_uuid']} added.")
 
     def _update_user(self, message: ClientMessage):
-        player = self.controller.game_data["players"][message["my_uuid"]]
+        player = self.controller.gd["players"][message["my_uuid"]]
         if player["player_id"] != message["parameters"]["item"]:
             logging.warning(f"Player {message['my_uuid']} is trying to change other player's credentials.")
             return
         message["parameters"]["item"] = message["my_uuid"]
-        self.controller.game_data.update(**message["parameters"])
+        self.controller.gd.update(**message["parameters"])
         self._broadcast_changes()
 
     def _start_game(self):
-        game_data = self.controller.game_data
+        game_data = self.controller.gd
         if not game_data.players.is_all_ready():
             logging.warning("Not all players are ready.")
             return

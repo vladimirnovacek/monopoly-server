@@ -4,10 +4,10 @@ from typing import ClassVar, Optional, Any
 from uuid import UUID
 
 from board_description import FIELDS, FieldType, FieldRecord
-from interfaces import IFields
+from interfaces import IFields, IField
 
 
-class Field:
+class Field(IField):
     """
     Represents a field on the board. The data of the fields are defined in board_description.py
     """
@@ -251,6 +251,9 @@ class BoardData(IFields):
 
     def is_nonactive(self, field: int) -> bool:
         return self.get_field(field).is_nonactive()
+
+    def advance_field_id(self, original_field: int, steps: int) -> int:
+        return (original_field + steps) % self.lenght
 
     def _generate_fields(self, fields: list[FieldRecord] = None) -> None:
         """

@@ -49,7 +49,11 @@ class IDataUnit(ABC):
 
 
 class IPlayer(ABC):
-    ...
+    player_uuid: UUID
+    field: int
+    in_jail: bool
+    jail_turns: int
+    get_out_of_jail_cards: int
 
 class IPlayers(IDataUnit, Sized, Iterable):
     @abstractmethod
@@ -68,24 +72,37 @@ class IPlayers(IDataUnit, Sized, Iterable):
 class IField(ABC):
     type: FieldType
     owner: Optional[UUID]
+    rent: int
+    tax: int
 
 
 class IFields(IDataUnit):
+    GO: ClassVar[int]
     JAIL: ClassVar[int]
+    JUST_VISITING: ClassVar[int]
 
     @abstractmethod
     def get_field(self, field_id: int) -> IField:
         ...
 
+    @abstractmethod
+    def advance_field_id(self, original_field: int, steps: int) -> int:
+        ...
 
 class IData(ABC):
     players: IPlayers
     fields: IFields
     player_order_cycler: Iterator
 
-    @abstractmethod
+
     @property
+    @abstractmethod
     def on_turn_uuid(self) -> UUID:
+        ...
+
+    @property
+    @abstractmethod
+    def on_turn_player(self) -> IPlayer:
         ...
 
     @abstractmethod
@@ -126,16 +143,20 @@ class IRoll(ABC):
     def sum(self) -> int:
         ...
 
+    @abstractmethod
+    def is_double(self) -> bool:
+        ...
 
 class IDice(ABC):
+    last_roll: IRoll | None
 
-    @abstractmethod
     @property
+    @abstractmethod
     def triple_double(self) -> bool:
         ...
 
     @abstractmethod
-    def roll(self) -> IRoll:
+    def roll(self, register: bool = True) -> IRoll:
         ...
 
     @abstractmethod
@@ -145,14 +166,30 @@ class IDice(ABC):
 
 class IController(ABC):
     dice: IDice
-    game_data: IData
+    gd: IData
     message: IMessenger
     server_uuid: UUID
 
     @abstractmethod
     def __init__(self, game_data: IData) -> None:
-        self.game_data: IData = game_data
+        self.gd: IData = game_data
 
     @abstractmethod
     def parse(self, message: ClientMessage) -> None:
+        ...
+
+    @abstractmethod
+    def pay(self, rent: int, payer_uuid: UUID, payee_uuid: UUID | None = None) -> None:
+        ...
+
+    @abstractmethod
+    def collect(self, payment: int, player_uuid: UUID) -> None:
+        ...
+
+    @abstractmethod
+    def move_to(self, field_id: int, player_uuid: UUID | None = None, check_pass_go: bool = False) -> None:
+        ...
+
+    @abstractmethod
+    def move_by(self, fields: int, player_uuid: UUID | None = None, check_pass_go: bool = True) -> None:
         ...

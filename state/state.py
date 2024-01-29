@@ -17,15 +17,15 @@ class State(ABC):
         ...
 
     def _broadcast_changes(self):
-        for record in self.controller.game_data.get_changes():
+        for record in self.controller.gd.get_changes():
             self.controller.message.add(**record)
         self.controller.message.broadcast()
 
     def _change_state(self, state: "State"):
-        game_data = self.controller.game_data
+        game_data = self.controller.gd
         on_turn = game_data.players.uuid_from_id(game_data.get_value(section="misc", item="on_turn"))
         for player in game_data.players:
-            self.controller.game_data.update(
+            self.controller.gd.update(
                 section="players", item=player, attribute="possible_actions",
                 value=state.get_possible_actions(player is on_turn)
             )
