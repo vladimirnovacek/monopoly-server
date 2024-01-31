@@ -57,6 +57,10 @@ class IPlayer(ABC):
 
 class IPlayers(IDataUnit, Sized, Iterable):
     @abstractmethod
+    def __getitem__(self, item):
+        ...
+
+    @abstractmethod
     def uuid_from_id(self, player_id: int) -> UUID:
         ...
 
@@ -176,6 +180,10 @@ class IController(ABC):
 
     @abstractmethod
     def parse(self, message: ClientMessage) -> None:
+        ...
+
+    @abstractmethod
+    def roll(self, register: bool = True) -> None:
         ...
 
     @abstractmethod

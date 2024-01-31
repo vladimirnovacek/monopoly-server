@@ -255,7 +255,7 @@ class CardDeck:
         """
         return self._last_card["action"] == "move"
 
-    def take_card(self) -> dict:
+    def draw(self) -> dict:
         self._last_card = next(self._deck_cycler)
         return self._last_card
 
@@ -273,5 +273,5 @@ class CardDeck:
 if __name__ == "__main__":
     deck = CardDeck(CardDeck.CC)
 
-    c = deck.take_card()
+    c = deck.draw()
     print(deck.get_description())

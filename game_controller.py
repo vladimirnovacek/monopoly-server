@@ -2,6 +2,8 @@
 from uuid import UUID
 
 import config
+from board_description import FieldType
+from chance_cc_cards import CardDeck
 from dice import Dice
 from interfaces import ClientMessage, IController, IMessenger, IData, IDice
 from state.pre_game import PreGameState
@@ -16,12 +18,18 @@ class GameController(IController):
         self.server_uuid: UUID | None = None
         self.state: State = PreGameState(self)
         self.dice: IDice = Dice(2, 6)
+        self.cc: CardDeck = CardDeck("cc")
+        self.chance: CardDeck = CardDeck("chance")
 
     def __getattr__(self, item):
         return getattr(self.state, item)
 
     def parse(self, message: ClientMessage) -> None:
         self.state.parse(message)
+
+    def roll(self, register: bool = True) -> None:
+        roll = self.dice.roll(register)
+        self.gd.update(section="events", item="roll", value=roll.get())
 
     def pay(self, payment: int, payer_uuid: UUID, payee_uuid: UUID | None = None) -> None:
         """
@@ -94,3 +102,11 @@ class GameController(IController):
         original_field = self.gd.players[player_uuid].field
         new_field = self.gd.fields.advance_field_id(original_field, fields)
         self.move_to(new_field, player_uuid, check_pass_go)
+
+    def draw_card(self, player_uuid: UUID | None = None) -> None:
+        if player_uuid is None:
+            player_uuid = self.gd.on_turn_uuid
+        player = self.gd.players[player_uuid]
+        field_type = self.gd.fields.get_field(player.field).type
+        deck = self.cc if field_type == FieldType.CC else self.chance
+        card = deck.draw()

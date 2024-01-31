@@ -25,17 +25,15 @@ class BeginTurnState(State):
         if message["action"] == "roll":
             self._roll_dice()
         if message["action"] == "payoff":
-            pass
+            pass  # TODO
         if message["action"] == "use_card":
-            pass
+            pass  # TODO
 
     def _roll_dice(self) -> None:
         if self.on_turn_player.in_jail:
             self._roll_in_jail()
             return
-        game_data = self.controller.gd
-        roll = self.controller.dice.roll()
-        game_data.update(section="misc", item="last_roll", value=roll.get())
+        self.controller.roll()
         if self.controller.dice.triple_double:
             self._move_to_jail()
         else:
@@ -70,9 +68,14 @@ class BeginTurnState(State):
                 self._actions_over()
             case FieldType.GO_TO_JAIL:
                 self._move_to_jail()
-            case FieldType.RAILROAD | FieldType.UTILITY | FieldType.STREET:
+            case FieldType.RAILROAD | FieldType.STREET:
                 if field.owner:
                     self._pay_rent(field)
+                else:
+                    self._change_state(BuyPropertyState(self.controller))
+            case FieldType.UTILITY:
+                if field.owner:
+                    self._pay_rent(field, multiplier=self.controller.dice.last_roll.sum())
                 else:
                     self._change_state(BuyPropertyState(self.controller))
             case FieldType.CC | FieldType.CHANCE:
@@ -80,7 +83,7 @@ class BeginTurnState(State):
             case FieldType.TAX:
                 self._pay_tax(field)
 
-    def _pay_rent(self, field: IField):
+    def _pay_rent(self, field: IField, multiplier: int = 1):
         self.controller.pay(field.rent, self.on_turn_player.player_uuid, field.owner)
         self._actions_over()
 
