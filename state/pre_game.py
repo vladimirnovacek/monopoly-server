@@ -73,5 +73,7 @@ class PreGameState(State):
         game_data.update(section="events", item="game_started", value=True)
         self.controller.message.server.locked = True
         self._change_state(BeginTurnState(self.controller))
+        self.stage = "begin_turn"
+        self.input_expected = True
         self._broadcast_changes()
         logging.info("Game started.")

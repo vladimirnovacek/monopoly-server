@@ -7,6 +7,8 @@ from interfaces import ClientMessage, IController
 class State(ABC):
     def __init__(self, controller: IController):
         self.controller = controller
+        self.stage: str = "pre_game"
+        self.input_expected: bool = False
 
     @abstractmethod
     def parse(self, message: ClientMessage):
