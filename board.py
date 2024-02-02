@@ -167,15 +167,32 @@ class BoardData(IFields):
         return self.fields[item]
 
     @property
-    def streets(self) -> list[Field]:
+    def streets(self) -> set[Field]:
         """
         Returns a list of all streets on the board.
         :return: A list of all streets on the board.
         :rtype: list[Field]
         """
-        return list(filter(
+        return set(filter(
             lambda field: field.type == FieldType.STREET, self.fields
         ))
+
+    def count_houses(self, player_uuid: UUID) -> tuple[int, int]:
+        """
+        Returns the number of houses and hotels on the board.
+        :return: The number of houses and hotels on the board.
+        :rtype: tuple[int, int]
+        """
+        houses = 0
+        hotels = 0
+        for field in self.streets:
+            if field.owner != player_uuid:
+                continue
+            if field.houses == 5:
+                hotels += 1
+            else:
+                houses += field.houses
+        return houses, hotels
 
     def update(self, *, item: str, attribute: str, value: Any) -> None:
         """
