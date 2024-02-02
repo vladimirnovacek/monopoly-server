@@ -4,6 +4,7 @@ from typing import Self, TypedDict, Any, ClassVar, Optional
 from uuid import UUID
 
 from board_description import FieldType
+from chance_cc_cards import CardDeck
 
 
 class ClientMessage(TypedDict):
@@ -76,6 +77,7 @@ class IPlayers(IDataUnit, Sized, Iterable):
 class IField(ABC):
     type: FieldType
     owner: Optional[UUID]
+    price: int
     rent: int
     tax: int
 
@@ -87,6 +89,10 @@ class IFields(IDataUnit):
 
     @abstractmethod
     def get_field(self, field_id: int) -> IField:
+        ...
+
+    @abstractmethod
+    def count_houses(self, player_uuid: UUID) -> int:
         ...
 
     @abstractmethod
@@ -173,6 +179,8 @@ class IController(ABC):
     gd: IData
     message: IMessenger
     server_uuid: UUID
+    cc: CardDeck
+    chance: CardDeck
 
     @abstractmethod
     def __init__(self, game_data: IData) -> None:
@@ -200,4 +208,8 @@ class IController(ABC):
 
     @abstractmethod
     def move_by(self, fields: int, player_uuid: UUID | None = None, check_pass_go: bool = True) -> None:
+        ...
+
+    @abstractmethod
+    def draw_card(self, player_uuid: UUID) -> None:
         ...
