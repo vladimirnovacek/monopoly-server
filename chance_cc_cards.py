@@ -43,7 +43,7 @@ class CardCommands:
     def advance_to_nearest_station(controller: IController):
         player = controller.gd.on_turn_player
         distance_to_nearest_station = (5 - player.field) % 10
-        controller.move_by(distance_to_nearest_station, player.player_uuid)
+        controller.move_by(distance_to_nearest_station, player.uuid)
         # paying double rent has to be handled after rolling dice
 
     @staticmethod
@@ -54,7 +54,7 @@ class CardCommands:
             move_to = ww
         else:
             move_to = ec
-        controller.move_to(move_to, player.player_uuid, check_pass_go=True)
+        controller.move_to(move_to, player.uuid, check_pass_go=True)
         # paying rent has to be handled after rolling dice
 
 
@@ -95,7 +95,7 @@ class CardCommands:
         on_turn = controller.gd.on_turn_player
         for player in controller.gd.players:
             if player is not on_turn:
-                controller.pay(10, player.player_uuid, on_turn.player_uuid)
+                controller.pay(10, player.uuid, on_turn.uuid)
 
     @staticmethod
     def get_out_of_jail(controller: IController):
@@ -142,7 +142,7 @@ class CardCommands:
         on_turn = controller.gd.on_turn_player
         for player in controller.gd.players:
             if player is not on_turn:
-                controller.pay(50, on_turn.player_uuid, player.player_uuid)
+                controller.pay(50, on_turn.uuid, player.uuid)
 
 
 class Card:
@@ -270,10 +270,3 @@ class CardDeck:
 
     def apply_card(self, controller: IController):
         self.last_card.apply(controller)
-
-
-if __name__ == "__main__":
-    deck = CardDeck(CardDeck.CC)
-
-    c = deck.draw()
-    print(deck.last_card.text)

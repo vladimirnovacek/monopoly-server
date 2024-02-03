@@ -24,7 +24,8 @@ class BeginTurnState(State):
 
     def parse(self, message: ClientMessage):
         if not self.controller.gd.is_player_on_turn(message["my_uuid"]):
-            return  # The player is not on turn. TODO add possibilities of buying houses, mortgaging and trading.
+            return  # The player is not on turn.
+            # TODO add possibilities of buying houses, mortgaging and trading.
         self._run_action_loop(message)
 
     def _run_action_loop(self, message: ClientMessage):
@@ -118,13 +119,13 @@ class BeginTurnState(State):
                 return "go_to_jail"
 
     def _pay_tax(self):
-        self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.player_uuid)
+        self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.uuid)
         return "end_roll"
 
     def _on_property(self) -> str:
         if not self.on_turn_player_field.owner:
             return "unowned_property"
-        elif self.on_turn_player_field.owner == self.on_turn_player.player_uuid:
+        elif self.on_turn_player_field.owner == self.on_turn_player.uuid:
             return "end_roll"
         else:
             return "pay_rent"
@@ -146,12 +147,12 @@ class BeginTurnState(State):
                 self.input_expected = True
                 return "extra_roll"
         self.special_rent = ""
-        self.controller.pay(rent, self.on_turn_player.player_uuid, self.on_turn_player_field.owner)
+        self.controller.pay(rent, self.on_turn_player.uuid, self.on_turn_player_field.owner)
         return "end_roll"
 
     def _buy_property(self) -> str:
-        self.controller.pay(self.on_turn_player_field.price, self.on_turn_player.player_uuid)
-        self.on_turn_player_field.owner = self.on_turn_player.player_uuid
+        self.controller.pay(self.on_turn_player_field.price, self.on_turn_player.uuid)
+        self.on_turn_player_field.owner = self.on_turn_player.uuid
         return "end_roll"
 
     def _roll_in_jail(self) -> str:

@@ -9,7 +9,7 @@ class Player(IPlayer):
             self, player_uuid: UUID,  player_id: int, name: str = None,
             token: str = "", cash: int = 0, field: int = -1, ready: bool = False):
         self.player_id: int = player_id
-        self.player_uuid: UUID = player_uuid
+        self.uuid: UUID = player_uuid
         self.name: str = f"Player {self.player_id + 1}" if name is None else name
         self.token: str = token
         self.cash: int = cash
@@ -61,7 +61,7 @@ class Players(IPlayers):
 
     def add(self, player_uuid: UUID, player_id: int) -> Player:
         new_player = Player(player_uuid, player_id)
-        self._players[new_player.player_uuid] = new_player
+        self._players[new_player.uuid] = new_player
         return new_player
 
     def is_all_ready(self):
@@ -70,7 +70,7 @@ class Players(IPlayers):
     def uuid_from_id(self, player_id: int) -> UUID:
         for player in self._players.values():
             if player.player_id == player_id:
-                return player.player_uuid
+                return player.uuid
         raise KeyError(f"Player with id {player_id} was not found.")
 
     def id_from_uuid(self, uuid: UUID) -> int:
