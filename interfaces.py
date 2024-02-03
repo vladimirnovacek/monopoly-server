@@ -4,7 +4,6 @@ from typing import Self, TypedDict, Any, ClassVar, Optional
 from uuid import UUID
 
 from board_description import FieldType
-from chance_cc_cards import CardDeck
 
 
 class ClientMessage(TypedDict):
@@ -50,7 +49,7 @@ class IDataUnit(ABC):
 
 
 class IPlayer(ABC):
-    player_uuid: UUID
+    uuid: UUID
     field: int
     in_jail: bool
     jail_turns: int
@@ -174,13 +173,30 @@ class IDice(ABC):
         ...
 
 
+class ICard(ABC):
+    type: str
+    ends_turn: bool
+    special_rent: str
+
+    @abstractmethod
+    def apply(self, controller) -> None:
+        ...
+
+class ICardDeck(ABC):
+
+    @abstractmethod
+    def draw(self) -> ICard:
+        ...
+
+
 class IController(ABC):
     dice: IDice
     gd: IData
     message: IMessenger
     server_uuid: UUID
-    cc: CardDeck
-    chance: CardDeck
+    cc: ICardDeck
+    chance: ICardDeck
+    on_turn_player: IPlayer
 
     @abstractmethod
     def __init__(self, game_data: IData) -> None:
@@ -208,8 +224,4 @@ class IController(ABC):
 
     @abstractmethod
     def move_by(self, fields: int, player_uuid: UUID | None = None, check_pass_go: bool = True) -> None:
-        ...
-
-    @abstractmethod
-    def draw_card(self, player_uuid: UUID) -> None:
         ...
