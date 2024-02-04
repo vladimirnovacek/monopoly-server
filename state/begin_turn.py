@@ -31,7 +31,7 @@ class BeginTurnState(State):
                 return {"buy", "auction"}
 
     def parse(self, message: ClientMessage):
-        if message["action"] not in self.get_possible_actions(self.on_turn_player):
+        if message["action"] not in self.get_possible_actions(self.controller.gd.players[message["my_uuid"]]):
             return
         match message["action"]:
             case "roll":
