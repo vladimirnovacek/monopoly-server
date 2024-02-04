@@ -17,14 +17,22 @@ class BeginTurnState(State):
     def on_turn_player_field(self) -> IField:
         return self.controller.gd.fields.get_field(self.on_turn_player.field)
 
-    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
-        if self.on_turn_player.in_jail:
-            return self._get_possible_actions_in_jail()
-        if on_turn:
-            return {"roll"}
-        return set()
+    def get_possible_actions(self, player: IPlayer) -> set[str]:
+        if not player == self.on_turn_player:
+            return set()
+        match self.stage:
+            case "begin_turn":
+                if player.in_jail:
+                    return self._get_possible_actions_in_jail()
+                return {"roll"}
+            case "extra_roll":
+                return {"roll"}
+            case "buying_decision":
+                return {"buy", "auction"}
 
     def parse(self, message: ClientMessage):
+        if message["action"] not in self.get_possible_actions(self.on_turn_player):
+            return
         match message["action"]:
             case "roll":
                 if self.stage == "rent_roll":
@@ -198,7 +206,7 @@ class BeginTurnState(State):
         return "buying_decision"
 
     def _get_possible_actions_in_jail(self):
-        actions = {"payoff"}
+        actions = {"payout"}
         if self.controller.gd.on_turn_player.get_out_of_jail_cards > 0:
             actions.add("use_card")
         if self.controller.gd.on_turn_player.jail_turns < 3:
@@ -213,6 +221,7 @@ class BeginTurnState(State):
 '''
 stages = {
     "auctioning",  # player decided not to buy a property
+    "begin_turn",  # player is on turn and rolls dices
     "buying_property",  # player decided to buy a property
     "end_roll",  # player did all actions after roll. If player rolled doubles,
                  # rolls again

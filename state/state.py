@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 
-from interfaces import ClientMessage, IController
+from interfaces import ClientMessage, IController, IPlayer
 
 
 class State(ABC):
@@ -15,7 +15,7 @@ class State(ABC):
         ...
 
     @abstractmethod
-    def get_possible_actions(self, on_turn: bool = True) -> set[str]:
+    def get_possible_actions(self, player: IPlayer) -> set[str]:
         ...
 
     def _broadcast_changes(self):
@@ -29,7 +29,7 @@ class State(ABC):
         for player in game_data.players:
             self.controller.gd.update(
                 section="players", item=player, attribute="possible_actions",
-                value=state.get_possible_actions(player is on_turn)
+                value=state.get_possible_actions(game_data.players[player])
             )
         self.controller.state = state
         logging.debug(f"Changed state to {state}.")
