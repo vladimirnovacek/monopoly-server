@@ -10,6 +10,8 @@ class BeginTurnState(State):
         super().__init__(controller)
         self.on_turn_player: IPlayer = self.controller.gd.on_turn_player
         self.extra_roll: IRoll | None = None
+        self.stage = "begin_turn"
+        self.input_expected = True
 
     @property
     def on_turn_player_field(self) -> IField:
@@ -23,83 +25,94 @@ class BeginTurnState(State):
         return set()
 
     def parse(self, message: ClientMessage):
+        match message["action"]:
+            case "roll":
+                if self.stage == "rent_roll":
+                    self.stage = "rent_rolling"
+                elif self.on_turn_player.in_jail:
+                    self.stage = "roll_in_jail"
+                else:
+                    self.stage = "rolling"
+            case "payout":
+                self.stage = "payout"
+            case "use_card":
+                self.stage = "use_card"
+            case "buy":
+                self.stage = "buying_property"
+            case "auction":
+                self.stage = "auctioning"
+            case "rent_roll":
+                self.stage = "rent_roll"
+            case "buy":
+                self.stage = "buying_property"
+            case "auction":
+                self.stage = "auctioning"
         if not self.controller.gd.is_player_on_turn(message["my_uuid"]):
             return  # The player is not on turn.
             # TODO add possibilities of buying houses, mortgaging and trading.
+        self.input_expected = False
         self._run_action_loop(message)
 
     def _run_action_loop(self, message: ClientMessage):
-        if self.on_turn_player.in_jail:
-            match message["action"]:
-                case "roll":
-                    self.stage = "roll_in_jail"
-                case "payoff":
-                    self.stage = "payout"
-                case "use_card":
-                    self.stage = "use_card"
-        elif self.stage == "buying_decision":
-            match message["action"]:
-                case "buy":
-                    self.stage = "buying_property"
-                case "auction":
-                    self.stage = "auctioning"
-        elif self.stage == "rent_roll":
-            if message["action"] == "roll":
-                self.stage = "rent_rolling"
-        else:
-            self.stage = "rolling"
-        self.input_expected = False
         while self.stage != "end_turn" or not self.input_expected:
             match self.stage:
-                case "rolling":
-                    self.stage = self._roll_dice()
-                case "rent_rolling":
-                    self.stage = self._rent_roll()
-                case "triple_double":
-                    self.stage = self._go_to_jail()
-                case "moving":
-                    self.stage = self._move()
-                case "moved":
-                    self.stage = self._moved()
-                case "on_property":
-                    self.stage = self._on_property()
-                case "on_card":
-                    self.stage = self._take_card()
-                case "pay_tax":
-                    self.stage = self._pay_tax()
-                case "pay_rent":
-                    self.stage = self._pay_rent()
-                case "unowned_property":
-                    self.stage = self._unowned_property()
-                case "buying_property":
-                    self.stage = self._buy_property()
                 case "auctioning":
                     self.stage = "end_roll"  # TODO
-                case "go_to_jail":
-                    self.stage = self._go_to_jail()
-                case "roll_in_jail":
-                    self.stage = self._roll_in_jail()
-                case "leaving_jail":
-                    self.stage = self._leave_jail()
+                case "buying_property":
+                    self.stage = self._buy_property()
                 case "end_roll":
                     self.stage = self._end_roll()
+                case "go_to_jail":
+                    self.stage = self._go_to_jail()
+                case "leaving_jail":
+                    self.stage = self._leave_jail()
+                case "moved":
+                    self.stage = self._moved()
+                case "moving":
+                    self.stage = self._move()
+                case "on_card":
+                    self.stage = self._take_card()
+                case "on_property":
+                    self.stage = self._on_property()
+                case "pay_rent":
+                    self.stage = self._pay_rent()
+                case "pay_tax":
+                    self.stage = self._pay_tax()
+                case "rent_rolling":
+                    self.stage = self._rent_roll()
+                case "roll_in_jail":
+                    self.stage = self._roll_in_jail()
+                case "rolling":
+                    self.stage = self._roll_dice()
+                case "unowned_property":
+                    self.stage = self._unowned_property()
+                case "triple_double":
+                    self.stage = self._go_to_jail()
         if self.stage == "end_turn":
             self._end_turn()
 
-    def _roll_dice(self) -> str:
-        self.controller.roll()
-        if self.controller.dice.triple_double:
-            return "triple_double"
-        else:
-            return "moving"
+    def _buy_property(self) -> str:
+        self.controller.pay(self.on_turn_player_field.price, self.on_turn_player.uuid)
+        self.on_turn_player_field.owner = self.on_turn_player.uuid
+        return "end_roll"
 
-    def _rent_roll(self) -> str:
-        self.controller.roll(False)
-        return "pay_rent"
+    def _end_roll(self) -> str:
+        if self.controller.dice.last_roll.is_double():
+            self.input_expected = True
+            return "begin_turn"
+        else:
+            return "end_turn"
 
     def _go_to_jail(self) -> str:
         self.controller.move_to(self.controller.gd.fields.JAIL)
         return "end_turn"
+
+    def _leave_jail(self):
+        self.on_turn_player.in_jail = False
+        self.on_turn_player.jail_turns = 0
+        self.controller.move_to(self.controller.gd.fields.JUST_VISITING)
+        self.input_expected = True
+        return "begin_turn"
 
     def _move(self) -> str:
         self.controller.move_by(self.controller.dice.last_roll.sum())
@@ -118,10 +131,6 @@ class BeginTurnState(State):
             case FieldType.GO_TO_JAIL:
                 return "go_to_jail"
 
-    def _pay_tax(self):
-        self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.uuid)
-        return "end_roll"
-
     def _on_property(self) -> str:
         if not self.on_turn_player_field.owner:
             return "unowned_property"
@@ -129,10 +138,6 @@ class BeginTurnState(State):
             return "end_roll"
         else:
             return "pay_rent"
-
-    def _unowned_property(self) -> str:
-        self.input_expected = True
-        return "buying_decision"
 
     def _pay_rent(self) -> str:
         rent = self.on_turn_player_field.rent
@@ -150,10 +155,20 @@ class BeginTurnState(State):
         self.controller.pay(rent, self.on_turn_player.uuid, self.on_turn_player_field.owner)
         return "end_roll"
 
-    def _buy_property(self) -> str:
-        self.controller.pay(self.on_turn_player_field.price, self.on_turn_player.uuid)
-        self.on_turn_player_field.owner = self.on_turn_player.uuid
+    def _pay_tax(self):
+        self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.uuid)
         return "end_roll"
+
+    def _rent_roll(self) -> str:
+        self.controller.roll(False)
+        return "pay_rent"
+
+    def _roll_dice(self) -> str:
+        self.controller.roll()
+        if self.controller.dice.triple_double:
+            return "triple_double"
+        else:
+            return "moving"
 
     def _roll_in_jail(self) -> str:
         roll = self.controller.dice.roll(False)
@@ -178,17 +193,9 @@ class BeginTurnState(State):
         else:
             return "end_roll"
 
-    def _end_roll(self) -> str:
-        if self.controller.dice.last_roll.is_double():
-            return "rolling"
-        else:
-            return "end_turn"
-
-    def _leave_jail(self):
-        self.on_turn_player.in_jail = False
-        self.on_turn_player.jail_turns = 0
-        self.controller.move_to(self.controller.gd.fields.JUST_VISITING)
-        return "rolling"
+    def _unowned_property(self) -> str:
+        self.input_expected = True
+        return "buying_decision"
 
     def _get_possible_actions_in_jail(self):
         actions = {"payoff"}
