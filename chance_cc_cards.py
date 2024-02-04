@@ -9,7 +9,7 @@ from interfaces import IController
 class CardDict(TypedDict):
     text: str
     command: Callable
-    action: str
+    card_type: str
 
 
 class CardCommands:
@@ -207,7 +207,7 @@ class CardDeck:
         {"text": "Make general repairs on all your property. For each house "
                  "pay £25. For each hotel pay £100",
          "command": CardCommands.general_repairs, "card_type": "pay"},  # 11
-        {"text": "Speeding fine £15", "command": CardCommands.pay_15},  # 12
+        {"text": "Speeding fine £15", "command": CardCommands.pay_15, "card_type": "pay"},  # 12
         {"text": "Take a trip to Kings Cross Station. If you pass Go, "
                  "collect £200",
          "command": CardCommands.advance_to_field_5, "card_type": "move"},  # 13
