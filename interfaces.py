@@ -207,7 +207,7 @@ class IController(ABC):
         ...
 
     @abstractmethod
-    def roll(self, register: bool = True) -> None:
+    def roll(self, register: bool = True) -> IRoll:
         ...
 
     @abstractmethod

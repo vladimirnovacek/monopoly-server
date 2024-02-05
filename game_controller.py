@@ -4,7 +4,7 @@ from uuid import UUID
 import config
 from chance_cc_cards import CardDeck
 from dice import Dice
-from interfaces import ClientMessage, IController, IMessenger, IData, IDice
+from interfaces import ClientMessage, IController, IMessenger, IData, IDice, IRoll
 from state.pre_game import PreGameState
 from state.state import State
 
@@ -26,9 +26,10 @@ class GameController(IController):
     def parse(self, message: ClientMessage) -> None:
         self.state.parse(message)
 
-    def roll(self, register: bool = True) -> None:
+    def roll(self, register: bool = True) -> IRoll:
         roll = self.dice.roll(register)
         self.gd.update(section="events", item="roll", value=roll.get())
+        return roll
 
     def pay(self, payment: int, payer_uuid: UUID, payee_uuid: UUID | None = None) -> None:
         """
