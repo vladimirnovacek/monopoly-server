@@ -4,16 +4,14 @@ import random
 
 from board_description import FieldType
 from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
-from state.state import State
-from state.end_turn import EndTurnState
 
 
-class BeginTurnState(State):
+class Turn:
     def __init__(self, controller: IController):
-        super().__init__(controller)
+        self.controller: IController = controller
         self.on_turn_player: IPlayer = self.controller.gd.on_turn_player
         self.extra_roll: IRoll | None = None
-        self.stage = "in_jail" if self.on_turn_player.in_jail else "begin_turn"
+        self.stage = "pre_game"
         self.input_expected = True
 
     @property
@@ -117,6 +115,8 @@ class BeginTurnState(State):
                     self.stage = self._update_player(message)
                 case "triple_double":
                     self.stage = self._go_to_jail()
+                case _:
+                    self.input_expected = True
 
     def _add_player(self, message: ClientMessage) -> str:
         def send_initial_message(to: IPlayer) -> None:
@@ -171,7 +171,10 @@ class BeginTurnState(State):
         self.controller.dice.reset()
         self._broadcast_changes()
         self.input_expected = True
-        return "begin_turn"
+        if self.on_turn_player.in_jail:
+            return "in_jail"
+        else:
+            return "begin_turn"
 
     def _go_to_jail(self) -> str:
         self.controller.move_to(self.controller.gd.fields.JAIL)
@@ -303,6 +306,11 @@ class BeginTurnState(State):
         self._broadcast_changes()
         self.input_expected = True
         return "pre_game"
+
+    def _broadcast_changes(self):
+        for record in self.controller.gd.get_changes():
+            self.controller.message.add(**record)
+        self.controller.message.broadcast()
 
     def _get_possible_actions_in_jail(self):
         actions = {"payout"}

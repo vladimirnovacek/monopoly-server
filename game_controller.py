@@ -5,8 +5,7 @@ import config
 from chance_cc_cards import CardDeck
 from dice import Dice
 from interfaces import ClientMessage, IController, IMessenger, IData, IDice, IRoll
-from state.pre_game import PreGameState
-from state.state import State
+from turn import Turn
 
 
 class GameController(IController):
@@ -15,16 +14,16 @@ class GameController(IController):
         self.gd: IData = data
         self.message: IMessenger | None = None
         self.server_uuid: UUID | None = None
-        self.state: State = PreGameState(self)
+        self.turn: Turn = Turn(self)
         self.dice: IDice = Dice(2, 6)
         self.cc: CardDeck = CardDeck("cc")
         self.chance: CardDeck = CardDeck("chance")
 
     def __getattr__(self, item):
-        return getattr(self.state, item)
+        return getattr(self.turn, item)
 
     def parse(self, message: ClientMessage) -> None:
-        self.state.parse(message)
+        self.turn.parse(message)
 
     def roll(self, register: bool = True) -> IRoll:
         roll = self.dice.roll(register)
