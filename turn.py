@@ -2,6 +2,8 @@ import itertools
 import logging
 import random
 
+from uuid import UUID
+
 from board_description import FieldType
 from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
 
@@ -9,7 +11,7 @@ from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
 class Turn:
     def __init__(self, controller: IController):
         self.controller: IController = controller
-        self.on_turn_player: IPlayer = self.controller.gd.on_turn_player
+        self.on_turn_player: IPlayer | None = None
         self.extra_roll: IRoll | None = None
         self.stage = "pre_game"
         self.input_expected = True
@@ -18,10 +20,12 @@ class Turn:
     def on_turn_player_field(self) -> IField:
         return self.controller.gd.fields.get_field(self.on_turn_player.field)
 
-    def get_possible_actions(self, player: IPlayer) -> set[str]:
-        if self.stage == "pre_game":
-            return {"add_player", "update_player", "start_game"}
-        if not player == self.on_turn_player:
+    def get_possible_actions(self, player_uuid: UUID) -> set[str]:
+        if player_uuid == self.controller.server_uuid:
+            return {"add_player"}
+        if self.stage in ("pre_game", "add_player"):
+            return {"update_player", "start_game"}
+        if player_uuid != self.on_turn_player.uuid:
             return set()
         match self.stage:
             case "begin_turn":
@@ -36,7 +40,7 @@ class Turn:
                 return {"end_turn"}
 
     def parse(self, message: ClientMessage):
-        if message["action"] not in self.get_possible_actions(self.controller.gd.players[message["my_uuid"]]):
+        if message["action"] not in self.get_possible_actions(message["my_uuid"]):
             return
         match message["action"]:
             case "add_player":
@@ -66,8 +70,6 @@ class Turn:
                 self.stage = "auctioning"
             case "end_turn":
                 self.stage = "end_turn_confirmed"
-        if not self.controller.gd.is_player_on_turn(message["my_uuid"]):
-            return  # The player is not on turn.
             # TODO add possibilities of buying houses, mortgaging and trading.
         self.input_expected = False
         self._run_action_loop(message)
@@ -131,7 +133,7 @@ class Turn:
             for record in self.controller.gd.get_all_for_player(to.uuid):
                 self.controller.message.add(to=to.uuid, **record)
             (self.controller.message
-             .add(to=to.uuid, section="events", item="possible_actions", value=self.get_possible_actions(to))
+             .add(to=to.uuid, section="events", item="possible_actions", value=self.get_possible_actions(to.uuid))
              .send(to.uuid))
 
         if message["my_uuid"] != self.controller.server_uuid:
@@ -296,6 +298,7 @@ class Turn:
         return "buying_decision"
 
     def _update_player(self, message: ClientMessage):
+        # TODO: prevent from updating other attributes than allowed, like cash
         player = self.controller.gd.players[message["my_uuid"]]
         self.controller.gd.update(
             section="players",
