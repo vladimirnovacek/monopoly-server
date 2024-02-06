@@ -18,6 +18,7 @@ class IServer(ABC):
 
 class IMessenger(ABC):
     server: IServer
+    controller: "IController"
 
     @abstractmethod
     def add(self, **kwargs) -> Self:

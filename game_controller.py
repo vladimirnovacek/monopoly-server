@@ -9,10 +9,11 @@ from turn import Turn
 
 
 class GameController(IController):
-    def __init__(self, data: IData):
+    def __init__(self, data: IData, messenger: IMessenger):
         super().__init__(data)
         self.gd: IData = data
-        self.message: IMessenger | None = None
+        self.message: IMessenger | None = messenger
+        self.message.controller = self
         self.server_uuid: UUID | None = None
         self.turn: Turn = Turn(self)
         self.dice: IDice = Dice(2, 6)

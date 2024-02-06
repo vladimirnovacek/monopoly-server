@@ -14,8 +14,8 @@ class Messenger(IMessenger):
     The messenger is responsible for sending and receiving data to and from the server. After creating the messenger, it
     is necessary to set the server using the set_server() method.
     """
-    def __init__(self, controller: IController):
-        self.controller: IController = controller
+    def __init__(self):
+        self.controller: IController | None = None
         """ The controller. """
         self.controller.message = self  # Due to cross-referencing cannot be set in controller's __init__.
         self.server: ServerFactory | None = None
