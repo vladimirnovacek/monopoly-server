@@ -42,9 +42,10 @@ class Players(IPlayers):
             raise KeyError(f"Player with uuid {item} was not found.")
         if type(item) is int:
             matching = filter(lambda player: player.player_id == item, self._players.values())
-            if len(matching) == 1:
+            try:
                 return next(matching)
-            raise KeyError(f"Player with id {item} was not found.")
+            except StopIteration:
+                raise KeyError(f"Player with id {item} was not found.")
         raise AttributeError(f"{item} has to be of type UUID or int.")
 
     def __len__(self):
