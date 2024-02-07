@@ -87,6 +87,8 @@ class Turn:
                     self.stage = self._end_roll()
                 case "end_turn":
                     self.stage = self._end_turn()
+                case "end_turn_confirmed":
+                    self.stage = self._end_turn_confirmed()
                 case "go_to_jail":
                     self.stage = self._go_to_jail()
                 case "leaving_jail":
