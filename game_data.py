@@ -36,15 +36,24 @@ class GameData(IData):
 
     @property
     def on_turn(self) -> int:
-        return self.get_value("misc", "on_turn")
+        on_turn = self.get_value("misc", "on_turn")
+        if on_turn is not None:
+            return on_turn
+        return -1
 
     @property
-    def on_turn_uuid(self) -> UUID:
-        return self.players.uuid_from_id(self.on_turn)
+    def on_turn_uuid(self) -> UUID | None:
+        try:
+            return self.players.uuid_from_id(self.on_turn)
+        except KeyError:
+            return None
 
     @property
-    def on_turn_player(self) -> Player:
-        return self.players[self.on_turn_uuid]
+    def on_turn_player(self) -> Player | None:
+        try:
+            return self.players[self.on_turn]
+        except KeyError:
+            return None
 
     def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
         """
