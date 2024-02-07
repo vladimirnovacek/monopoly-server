@@ -51,6 +51,9 @@ class IDataUnit(ABC):
 
 class IPlayer(ABC):
     uuid: UUID
+    name: str
+    token: str
+    ready: bool
     field: int
     in_jail: bool
     jail_turns: int
@@ -104,15 +107,14 @@ class IData(ABC):
     fields: IFields
     player_order_cycler: Iterator
 
-
     @property
     @abstractmethod
-    def on_turn_uuid(self) -> UUID:
+    def on_turn_uuid(self) -> UUID | None:
         ...
 
     @property
     @abstractmethod
-    def on_turn_player(self) -> IPlayer:
+    def on_turn_player(self) -> IPlayer | None:
         ...
 
     @abstractmethod
