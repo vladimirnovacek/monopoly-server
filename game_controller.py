@@ -77,11 +77,11 @@ class GameController(IController):
         if player_uuid is None:
             player_uuid = self.gd.on_turn_uuid
         original_field = self.gd.players[player_uuid].field
-        self.update(section="players", item=player_uuid, attribute="field", value=field_id)
+        self.gd.update(section="players", item=player_uuid, attribute="field", value=field_id)
         if field_id == self.gd.fields.JAIL:
-            self.update(section="players", item=player_uuid, attribute="in_jail", value=True)
+            self.gd.update(section="players", item=player_uuid, attribute="in_jail", value=True)
         elif original_field == self.gd.fields.JAIL:
-            self.update(section="players", item=player_uuid, attribute="in_jail", value=False)
+            self.gd.update(section="players", item=player_uuid, attribute="in_jail", value=False)
         elif check_pass_go and original_field > field_id:
             self.collect(config.go_cash, player_uuid)
 
