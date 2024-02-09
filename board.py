@@ -13,6 +13,8 @@ class Field(IField):
     """
 
     def __init__(self, board: "BoardData", field_id: int):
+        self.id: int = field_id
+        """ The id of the field """
         self.board = board
         """ The board this field belongs to """
         self.info: dict = FIELDS[field_id]
