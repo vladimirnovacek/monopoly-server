@@ -1,9 +1,8 @@
-import itertools
 import logging
-import random
 
 from uuid import UUID
 
+import config
 from board_description import FieldType
 from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
 
@@ -64,10 +63,6 @@ class Turn:
                 self.stage = "buying_property"
             case "auction":
                 self.stage = "auctioning"
-            case "buy":
-                self.stage = "buying_property"
-            case "auction":
-                self.stage = "auctioning"
             case "end_turn":
                 self.stage = "end_turn_confirmed"
             # TODO add possibilities of buying houses, mortgaging and trading.
@@ -101,6 +96,8 @@ class Turn:
                     self.stage = self._take_card()
                 case "on_property":
                     self.stage = self._on_property()
+                case "payout":
+                    self.stage = self._payout()
                 case "pay_rent":
                     self.stage = self._pay_rent()
                 case "pay_tax":
@@ -117,6 +114,8 @@ class Turn:
                     self.stage = self._unowned_property()
                 case "update_player":
                     self.stage = self._update_player(message)
+                case "use_card":
+                    self.stage = self._use_card()
                 case "triple_double":
                     self.stage = self._go_to_jail()
                 case _:
@@ -143,26 +142,31 @@ class Turn:
             logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
         else:
             parameters = message["parameters"]
-            player = self.controller.gd.players.add(parameters["player_uuid"], parameters["player_id"])
+            player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
             send_initial_message(player)
             self._broadcast_changes()
-            logging.info(f"Player {parameters['player_uuid']} added.")
+            logging.info(f"Player {player.name} connected to the game.")
         self.input_expected = True
         return "pre_game"
 
     def _buy_property(self) -> str:
-        self.controller.pay(self.on_turn_player_field.price, self.on_turn_player.uuid)
-        self.on_turn_player_field.owner = self.on_turn_player.uuid
+        self.controller.buy_property(self.on_turn_player_field, self.on_turn_player)
+        logging.info(f"Player {self.on_turn_player.uuid} bought {self.on_turn_player_field.name} for "
+                     f"{self.on_turn_player_field.price}.")
         return "end_roll"
 
     def _end_roll(self) -> str:
         if self.controller.dice.last_roll.is_double():
+            logging.info(f"Player {self.on_turn_player.name} rolled a double and rolls again.")
+            self._broadcast_changes()
             self.input_expected = True
             return "begin_turn"
         else:
             return "end_turn"
 
     def _end_turn(self) -> str:
+        logging.info(f"Player {self.on_turn_player.name} ended their turn.")
+        self._broadcast_changes()
         self.input_expected = True
         return "end_turn"
 
@@ -173,6 +177,7 @@ class Turn:
         self.special_rent = ""
         self.extra_roll = None
         self.controller.dice.reset()
+        logging.info(f"Player {self.on_turn_player.name} is on turn.")
         self._broadcast_changes()
         self.input_expected = True
         if self.on_turn_player.in_jail:
@@ -181,6 +186,7 @@ class Turn:
             return "begin_turn"
 
     def _go_to_jail(self) -> str:
+        logging.info(f"Player {self.on_turn_player.name} was sent to jail.")
         self.controller.move_to(self.controller.gd.fields.JAIL)
         return "end_turn"
 
@@ -188,11 +194,14 @@ class Turn:
         self.on_turn_player.in_jail = False
         self.on_turn_player.jail_turns = 0
         self.controller.move_to(self.controller.gd.fields.JUST_VISITING)
+        logging.info(f"Player {self.on_turn_player.name} left jail.")
+        self._broadcast_changes()
         self.input_expected = True
         return "begin_turn"
 
     def _move(self) -> str:
         self.controller.move_by(self.controller.dice.last_roll.sum())
+        logging.info(f"Player {self.on_turn_player.name} moved to {self.on_turn_player_field.name}.")
         return "moved"
 
     def _moved(self) -> str:
@@ -216,6 +225,12 @@ class Turn:
         else:
             return "pay_rent"
 
+    def _payout(self) -> str:
+        logging.info(f"Player {self.on_turn_player.name} pays the fine.")
+        self.controller.pay(config.payout_price, self.on_turn_player.uuid)
+        self.controller.gd.update(section="events", item="payout", value=True)
+        return "leaving_jail"
+
     def _pay_rent(self) -> str:
         if self.special_rent == "10xroll":
             if self.extra_roll:
@@ -223,34 +238,41 @@ class Turn:
                 self.special_rent = ""
                 self.extra_roll = None
             else:
+                self._broadcast_changes()
                 self.input_expected = True
                 return "rent_roll"
         else:
             rent = self.on_turn_player_field.rent
             if self.on_turn_player_field.type == FieldType.UTILITY:
                 rent *= self.controller.dice.last_roll.sum()
-            elif self.special_rent == "double":
+            if self.special_rent == "double":
                 rent *= 2
+        logging.info(f"Player {self.on_turn_player.name} pays the rent of £{rent} to {self.on_turn_player_field.owner}.")
         self.controller.pay(rent, self.on_turn_player.uuid, self.on_turn_player_field.owner)
         return "end_roll"
 
     def _pay_tax(self):
+        logging.info(f"Player {self.on_turn_player.name} pays the tax of £{self.on_turn_player_field.tax}.")
         self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.uuid)
         return "end_roll"
 
     def _rent_roll(self) -> str:
         self.extra_roll = self.controller.roll(False)
+        logging.info(f"Player {self.on_turn_player.name} rolled a {self.extra_roll.sum()}.")
         return "pay_rent"
 
     def _roll_dice(self) -> str:
-        self.controller.roll()
+        roll = self.controller.roll()
+        logging.info(f"Player {self.on_turn_player.name} rolled a {roll.sum()}.")
         if self.controller.dice.triple_double:
+            self.controller.gd.update(section="events", item="triple_double", value=True)
             return "triple_double"
         else:
             return "moving"
 
     def _roll_in_jail(self) -> str:
         roll = self.controller.dice.roll(False)
+        logging.info(f"Player {self.on_turn_player.name} rolled {roll.get()[0]} and {roll.get()[1]}.")
         if roll.is_double():
             return "leaving_jail"
         else:
@@ -265,24 +287,20 @@ class Turn:
         if len(game_data.players) < 2:
             logging.warning("Not enough players.")
             return "pre_game"
-        game_data.update(section="misc", item="state", value="begin_turn")
         game_data.set_initial_values()
-        player_order = list(range(len(game_data.players)))
-        random.shuffle(player_order)
-        game_data.update(section="misc", item="player_order", value=player_order)
-        game_data.player_order_cycler = itertools.cycle(player_order)
-        game_data.update(section="misc", item="on_turn", value=next(game_data.player_order_cycler))
         game_data.update(section="events", item="game_started", value=True)
         self.controller.message.server.locked = True
-        self._broadcast_changes()
         self.on_turn_player = game_data.on_turn_player
         logging.info("Game started.")
+        self._broadcast_changes()
         self.input_expected = True
         return "begin_turn"
 
     def _take_card(self) -> str:
         deck = self.controller.cc if self.on_turn_player_field.type == FieldType.CC else self.controller.chance
         card = deck.draw()
+        logging.info(f"Player {self.on_turn_player.name} takes card saying: {card.text}.")
+        self.controller.gd.update(section="events", item="card", value=(card.id, card.text))
         card.apply(self.controller)
         if card.special_rent:
             self.special_rent = card.special_rent
@@ -296,12 +314,16 @@ class Turn:
             return "end_roll"
 
     def _unowned_property(self) -> str:
+        self._broadcast_changes()
         self.input_expected = True
         return "buying_decision"
 
     def _update_player(self, message: ClientMessage):
-        # TODO: prevent from updating other attributes than allowed, like cash
         player = self.controller.gd.players[message["my_uuid"]]
+        if message["parameters"]["attribute"] not in ("name", "token", "ready"):
+            logging.warning(f"Attempt to update invalid player attribute: {message['parameters']['attribute']} by "
+                            f"player {player.name}: {player.uuid}.")
+            return "pre_game"
         self.controller.gd.update(
             section="players",
             item=player.uuid,
@@ -311,6 +333,12 @@ class Turn:
         self._broadcast_changes()
         self.input_expected = True
         return "pre_game"
+
+    def _use_card(self):
+        self.controller.gd.update(section="events", item="use_card", value=True)
+        self.on_turn_player.get_out_of_jail_cards -= 1
+        logging.info(f"Player {self.on_turn_player.name} uses a get out of jail card.")
+        return "leaving_jail"
 
     def _broadcast_changes(self):
         for record in self.controller.gd.get_changes():
