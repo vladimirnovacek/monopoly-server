@@ -146,10 +146,11 @@ class CardCommands:
 
 
 class Card:
-    def __init__(self, text: str, command: Callable, card_type: str, ends_turn: bool = False, special_rent: str = ""):
-        self.text = text
-        self.command = command
-        self.type = card_type
+    def __init__(self, card_id: int, text: str, command: Callable, card_type: str, ends_turn: bool = False, special_rent: str = ""):
+        self.id: int = card_id
+        self.text: str = text
+        self.command: Callable = command
+        self.type: str = card_type
         self.ends_turn: bool = ends_turn
         self.special_rent: str = special_rent
 
@@ -171,86 +172,86 @@ class CardDeck:
     CC = "cc"
 
     _CHANCE_CARDS: list[CardDict] = [
-        {"text": "Advance to Go (Collect £200)",
+        {"card_id": 0,"text": "Advance to Go (Collect £200)",
          "command": CardCommands.advance_to_go, "card_type": "move"},  # 0
-        {"text": "Advance to Trafalgar Square. If you pass Go, collect £200",
+        {"card_id": 1,"text": "Advance to Trafalgar Square. If you pass Go, collect £200",
          "command": CardCommands.advance_to_field_24, "card_type": "move"},  # 1
-        {"text": "Advance to Mayfair",
+        {"card_id": 2, "text": "Advance to Mayfair",
          "command": CardCommands.advance_to_field_39, "card_type": "move"},  # 2
-        {"text": "Advance to Pall Mall. If you pass Go, collect £200",
+        {"card_id": 3, "text": "Advance to Pall Mall. If you pass Go, collect £200",
          "command": CardCommands.advance_to_field_11, "card_type": "move"},  # 3
-        {"text": "Advance to the nearest Station. If unowned, you may buy it "
+        {"card_id": 4, "text": "Advance to the nearest Station. If unowned, you may buy it "
                  "from the Bank. If owned, pay owner twice the rental to "
                  "which they are otherwise entitled",
          "command": CardCommands.advance_to_nearest_station, "card_type": "move",
          "special_rent": "double"},  # 4
-        {"text": "Advance to the nearest Station. If unowned, you may buy it "
+        {"card_id": 5, "text": "Advance to the nearest Station. If unowned, you may buy it "
                  "from the Bank. If owned, pay owner twice the rental to "
                  "which they are otherwise entitled",
          "command": CardCommands.advance_to_nearest_station, "card_type": "move",
          "special_rent": "double"},  # 5
-        {"text": "Advance token to nearest Utility. If unowned, you may buy it "
+        {"card_id": 6, "text": "Advance token to nearest Utility. If unowned, you may buy it "
                  "from the Bank. If owned, throw dice and pay owner a total "
                  "ten times amount thrown",
          "command": CardCommands.advance_to_nearest_utility, "card_type": "move",
          "special_rent": "10xroll"},  # 6
-        {"text": "Bank pays you dividend of £50",
+        {"card_id": 7, "text": "Bank pays you dividend of £50",
          "command": CardCommands.collect_50, "card_type": "collect"},  # 7
-        {"text": "Get Out of Jail Free",
+        {"card_id": 8, "text": "Get Out of Jail Free",
          "command": CardCommands.get_out_of_jail,
          "card_type": "get_out_of_jail"},  # 8
-        {"text": "Go Back 3 Spaces",
+        {"card_id": 9, "text": "Go Back 3 Spaces",
          "command": CardCommands.go_back_3_spaces, "card_type": "move"},  # 9
-        {"text": "Go to Jail. Go directly to Jail, do not pass Go, do not "
+        {"card_id": 10, "text": "Go to Jail. Go directly to Jail, do not pass Go, do not "
                  "collect £200",
          "command": CardCommands.go_to_jail, "card_type": "go_to_jail", "ends_turn": True},  # 10
-        {"text": "Make general repairs on all your property. For each house "
+        {"card_id": 11, "text": "Make general repairs on all your property. For each house "
                  "pay £25. For each hotel pay £100",
          "command": CardCommands.general_repairs, "card_type": "pay"},  # 11
-        {"text": "Speeding fine £15", "command": CardCommands.pay_15, "card_type": "pay"},  # 12
-        {"text": "Take a trip to Kings Cross Station. If you pass Go, "
+        {"card_id": 12, "text": "Speeding fine £15", "command": CardCommands.pay_15, "card_type": "pay"},  # 12
+        {"card_id": 13, "text": "Take a trip to Kings Cross Station. If you pass Go, "
                  "collect £200",
          "command": CardCommands.advance_to_field_5, "card_type": "move"},  # 13
-        {"text": "You have been elected Chairman of the Board. Pay each "
+        {"card_id": 14, "text": "You have been elected Chairman of the Board. Pay each "
                  "player £50",
          "command": CardCommands.pay_50_to_everyone, "card_type": "pay_each"},  # 14
-        {"text": "Your building loan matures. Collect £150",
+        {"card_id": 15, "text": "Your building loan matures. Collect £150",
          "command": CardCommands.collect_150, "card_type": "collect"}  # 15
     ]
     _CC_CARDS: list[CardDict] = [
-        {"text": "Advance to Go (Collect £200)",
+        {"card_id": 100, "text": "Advance to Go (Collect £200)",
          "command": CardCommands.advance_to_go, "card_type": "move"},
-        {"text": "Bank error in your favour. Collect £200",
+        {"card_id": 101, "text": "Bank error in your favour. Collect £200",
          "command": CardCommands.collect_200, "card_type": "collect"},
-        {"text": "Doctor’s fee. Pay £50",
+        {"card_id": 102, "text": "Doctor’s fee. Pay £50",
          "command": CardCommands.pay_50, "card_type": "pay"},
-        {"text": "From sale of stock you get £50",
+        {"card_id": 103, "text": "From sale of stock you get £50",
          "command": CardCommands.collect_50, "card_type": "collect"},
-        {"text": "Get Out of Jail Free",
+        {"card_id": 104, "text": "Get Out of Jail Free",
          "command": CardCommands.get_out_of_jail, "card_type": "get_out_of_jail"},
-        {"text": "Go to Jail. Go directly to jail, do not pass Go, do not "
+        {"card_id": 105, "text": "Go to Jail. Go directly to jail, do not pass Go, do not "
                  "collect £200",
          "command": CardCommands.go_to_jail, "card_type": "go_to_jail", "ends_turn": True},
-        {"text": "Holiday fund matures. Receive £100",
+        {"card_id": 106, "text": "Holiday fund matures. Receive £100",
          "command": CardCommands.collect_100, "card_type": "collect"},
-        {"text": "Income tax refund. Collect £20",
+        {"card_id": 107, "text": "Income tax refund. Collect £20",
          "command": CardCommands.collect_20, "card_type": "collect"},
-        {"text": "It is your birthday. Collect £10 from every player",
+        {"card_id": 108, "text": "It is your birthday. Collect £10 from every player",
          "command": CardCommands.collect_10_from_everyone, "card_type": "collect_from_each"},
-        {"text": "Life insurance matures. Collect £100",
+        {"card_id": 109, "text": "Life insurance matures. Collect £100",
          "command": CardCommands.collect_100, "card_type": "pay"},
-        {"text": "Pay hospital fees of £100",
+        {"card_id": 110, "text": "Pay hospital fees of £100",
          "command": CardCommands.pay_100, "card_type": "pay"},
-        {"text": "Pay school fees of £50",
+        {"card_id": 111, "text": "Pay school fees of £50",
          "command": CardCommands.pay_50, "card_type": "pay"},
-        {"text": "Receive £25 consultancy fee",
+        {"card_id": 112, "text": "Receive £25 consultancy fee",
          "command": CardCommands.collect_25, "card_type": "collect"},
-        {"text": "You are assessed for street repairs. £40 per house. "
+        {"card_id": 113, "text": "You are assessed for street repairs. £40 per house. "
                  "£115 per hotel",
          "command": CardCommands.street_repairs, "card_type": "pay"},
-        {"text": "You have won second prize in a beauty contest. Collect £10",
+        {"card_id": 114, "text": "You have won second prize in a beauty contest. Collect £10",
          "command": CardCommands.collect_10, "card_type": "collect"},
-        {"text": "You inherit £100",
+        {"card_id": 115, "text": "You inherit £100",
          "command": CardCommands.collect_100, "card_type": "collect"}
     ]
 
