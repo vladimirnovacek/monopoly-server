@@ -22,6 +22,10 @@ class Player(IPlayer):
     def __getitem__(self, item):
         return getattr(self, item)
 
+    def __iter__(self):
+        for attr in self.attributes:
+            yield attr
+
     @property
     def attributes(self):
         return "player_id", "name", "token", "cash", "field", "ready"
