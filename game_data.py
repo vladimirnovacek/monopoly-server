@@ -1,5 +1,7 @@
+import itertools
 from collections.abc import Iterator
 from itertools import cycle
+import random
 from uuid import UUID
 from typing import TypedDict, Any
 
@@ -55,7 +57,7 @@ class GameData(IData):
         except KeyError:
             return None
 
-    def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
+    def update(self, *, section: str, item: int | str | UUID, attribute: str | None = None, value: Any) -> None:
         """
         Updates the value of a specific item.
         :param section:
@@ -88,9 +90,17 @@ class GameData(IData):
 
     def add_change(self, *args, **kwargs) -> None:
         if kwargs:
-            largs = list(args)
-            largs.extend(kwargs.values())
-            args = tuple(largs)
+            try:
+                sorted_keys = sorted(
+                    kwargs.keys(),
+                    key=lambda key: ("section", "item", "attribute", "value").index(key)
+                )
+                kwargs_values = [kwargs[key] for key in sorted_keys]
+                largs = list(args)
+                largs.extend(kwargs_values)
+                args = tuple(largs)
+            except ValueError:
+                raise AttributeError("Unknown keyword argument")
         if args in self._changes or not args:
             return
         self._changes.append(args)
@@ -192,6 +202,17 @@ class GameData(IData):
         for player in self.players:
             self.update(section="players", item=player, attribute="cash", value=config.initial_cash)
             self.update(section="players", item=player, attribute="field", value=config.initial_field)
+        player_order = list(range(len(self.players)))
+        random.shuffle(player_order)
+        self.update(section="misc", item="player_order", value=player_order)
+        self.player_order_cycler = itertools.cycle(player_order)
+        self.update(section="misc", item="on_turn", value=next(self.player_order_cycler))
 
     def is_player_on_turn(self, player_uuid: UUID) -> bool:
         return player_uuid == self.players.uuid_from_id(self.get_value("misc", "on_turn"))
+
+    def add_player(self, player_uuid: UUID, player_id: int):
+        player = self.players.add(player_uuid, player_id)
+        for attribute in player:
+            self.add_change(section="players", item=player.uuid, attribute=attribute, value=player[attribute])
+        return player
