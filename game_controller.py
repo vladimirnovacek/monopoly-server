@@ -4,7 +4,7 @@ from uuid import UUID
 import config
 from chance_cc_cards import CardDeck
 from dice import Dice
-from interfaces import ClientMessage, IController, IMessenger, IData, IDice, IRoll
+from interfaces import ClientMessage, IController, IMessenger, IData, IDice, IRoll, IField, IPlayer
 from turn import Turn
 
 
@@ -83,6 +83,7 @@ class GameController(IController):
         elif original_field == self.gd.fields.JAIL:
             self.gd.update(section="players", item=player_uuid, attribute="in_jail", value=False)
         elif check_pass_go and original_field > field_id:
+            self.gd.update(section="events", item="pass_go", value=True)
             self.collect(config.go_cash, player_uuid)
 
 
@@ -102,3 +103,9 @@ class GameController(IController):
         original_field = self.gd.players[player_uuid].field
         new_field = self.gd.fields.advance_field_id(original_field, fields)
         self.move_to(new_field, player_uuid, check_pass_go)
+
+    def buy_property(self, field: IField, player: IPlayer, price: int = -1) -> None:
+        if price == -1:
+            price = field.price
+        self.pay(price, player.uuid, field.owner)
+        self.gd.update(section="fields", item=field.id, attribute="owner", value=player.uuid)
