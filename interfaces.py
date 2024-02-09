@@ -78,6 +78,8 @@ class IPlayers(IDataUnit, Sized, Iterable):
 
 
 class IField(ABC):
+    name: str
+    id: int
     type: FieldType
     owner: Optional[UUID]
     price: int
@@ -122,6 +124,10 @@ class IData(ABC):
         ...
 
     @abstractmethod
+    def add_player(self, player_uuid: UUID, player_id: int) -> IPlayer:
+        ...
+
+    @abstractmethod
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
         ...
 
@@ -138,7 +144,7 @@ class IData(ABC):
         ...
 
     @abstractmethod
-    def update(self, *, section: str, item: str | UUID, attribute: str | None = None, value: Any) -> None:
+    def update(self, *, section: str, item: int |str | UUID, attribute: str | None = None, value: Any) -> None:
         ...
 
     @abstractmethod
@@ -177,6 +183,8 @@ class IDice(ABC):
 
 
 class ICard(ABC):
+    id: int
+    text: str
     type: str
     ends_turn: bool
     special_rent: str
@@ -227,4 +235,8 @@ class IController(ABC):
 
     @abstractmethod
     def move_by(self, fields: int, player_uuid: UUID | None = None, check_pass_go: bool = True) -> None:
+        ...
+
+    @abstractmethod
+    def buy_property(self, field: IField, player: IPlayer, price: int = -1) -> None:
         ...
