@@ -49,7 +49,7 @@ class Server(Protocol):
         :param data: The data to be sent.
         :type data: bytes
         """
-        print(f"Sent to {self.player_uuid}: {pickle.loads(data)}")
+        logging.debug(f"Sending data: {pickle.loads(data)}")
         self.transport.write(data)
 
 class ServerFactory(Factory, IServer):
