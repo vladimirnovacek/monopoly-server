@@ -1,4 +1,4 @@
-
+import logging
 import pickle
 from typing import Self, TYPE_CHECKING, Any
 from uuid import UUID
@@ -17,7 +17,6 @@ class Messenger(IMessenger):
     def __init__(self):
         self.controller: IController | None = None
         """ The controller. """
-        self.controller.message = self  # Due to cross-referencing cannot be set in controller's __init__.
         self.server: ServerFactory | None = None
         """ The server. Due to cross-referencing is initially None. Has to be set by the set_server() method. """
         self._messages = []
@@ -75,7 +74,7 @@ class Messenger(IMessenger):
             messages.extend(self._messages)
         if player_uuid in self._private_messages:
             messages.extend(self._private_messages[player_uuid])
-            self._private_messages[player_uuid].clear()
+            del self._private_messages[player_uuid]
         return pickle.dumps(messages) if messages else b""
 
     def send(self, player_uuid: UUID, data: bytes | None = None) -> None:
@@ -90,6 +89,7 @@ class Messenger(IMessenger):
         if data is None:
             data = self.get(player_uuid)
         if data:
+            logging.debug(f"Sending to {player_uuid}: {pickle.loads(data)}")
             self.server.send(player_uuid, data)
 
     def broadcast(self, data: bytes | None = None) -> None:
@@ -103,7 +103,8 @@ class Messenger(IMessenger):
             for player_uuid in self.server.connected_clients:
                 data = self.get(player_uuid)
                 if data:
-                    self.server.send(player_uuid, data)
+                    self.send(player_uuid, data)
             self._messages.clear()
         else:
+            logging.debug(f"Broadcasting: {pickle.loads(data)}")
             self.server.broadcast(data)
