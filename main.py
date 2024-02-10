@@ -8,9 +8,9 @@ from server import ServerFactory
 
 
 def start_server():
-    gcontroller = GameController(GameData())
-    parser = messenger.Messenger(gcontroller)
-    factory = ServerFactory(parser)
+    message = messenger.Messenger()
+    gcontroller = GameController(GameData(), message)
+    factory = ServerFactory(message)
     reactor.listenTCP(config.listen_port, factory)
     reactor.run()
 
