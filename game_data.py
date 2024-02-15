@@ -185,9 +185,6 @@ class GameData(IData):
         for i, field in enumerate(self.fields):
             for attribute in field:
                 data.append(self.get("fields", i, attribute, getattr(field, attribute)))
-        # Retrieve data from "misc" section
-        for item in self.misc:
-            data.append(self.get("misc", item, self.get_value("misc", item)))
         # Retrieve data from section "players". It is done separately because
         # we don't want to send uuids of other players so we have to replace them with their ids.
         for item in self["players"]:
