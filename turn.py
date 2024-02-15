@@ -134,6 +134,7 @@ class Turn:
             for record in self.controller.gd.get_all_for_player(to.uuid):
                 self.controller.message.add(to=to.uuid, **record)
             (self.controller.message
+             .add(to=to.uuid, section="events", item="initialize", value=True)
              .add(to=to.uuid, section="events", item="possible_actions", value=self.get_possible_actions(to.uuid))
              .send(to.uuid))
 
@@ -144,6 +145,7 @@ class Turn:
             parameters = message["parameters"]
             player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
             send_initial_message(player)
+            self.controller.message.add(section="events", item="player_connected", value=player.player_id)
             self._broadcast_changes()
             logging.info(f"Player {player.name} connected to the game.")
         self.input_expected = True
