@@ -51,6 +51,7 @@ class IDataUnit(ABC):
 
 class IPlayer(ABC):
     uuid: UUID
+    player_id: int
     name: str
     token: str
     ready: bool
