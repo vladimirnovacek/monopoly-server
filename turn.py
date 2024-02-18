@@ -144,7 +144,7 @@ class Turn:
         else:
             parameters = message["parameters"]
             for player in self.controller.gd.players:
-                self.controller.gd.update(section="players", item=player.uuid, attribute="ready", value=False)
+                self.controller.gd.update(section="players", item=player, attribute="ready", value=False)
             player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
             send_initial_message(player)
             self.controller.message.add(section="events", item="player_connected", value=player.player_id)
@@ -334,11 +334,12 @@ class Turn:
             attribute=message["parameters"]["attribute"],
             value=message["parameters"]["value"]
         )
-        self.controller.gd.update(section="events", item="player_updated", value=True)
-        if message["parameters"]["attribute"] == "ready":
-            if self.controller.gd.players.is_all_ready() and len(self.controller.gd.players) < 2:
-                return "start_game"
-        self._broadcast_changes()
+        if self.controller.gd.is_changes_pending():
+            self.controller.gd.update(section="events", item="player_updated", value=True)
+            if message["parameters"]["attribute"] == "ready":
+                if self.controller.gd.players.is_all_ready() and len(self.controller.gd.players) < 2:
+                    return "start_game"
+            self._broadcast_changes()
         self.input_expected = True
         return "pre_game"
 

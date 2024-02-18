@@ -137,6 +137,10 @@ class IData(ABC):
         ...
 
     @abstractmethod
+    def is_changes_pending(self) -> bool:
+        ...
+
+    @abstractmethod
     def get_value(self, section: str, item: str | UUID, attribute: str | None = None) -> Any:
         ...
 

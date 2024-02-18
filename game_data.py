@@ -164,6 +164,9 @@ class GameData(IData):
                     change["item"] = self.players.id_from_uuid(change["item"])
             yield change
 
+    def is_changes_pending(self) -> bool:
+        return bool(self._changes)
+
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
         """
         Retrieves all data for a specific player in a format that can be used by the message factory. This method is
