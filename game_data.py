@@ -142,7 +142,7 @@ class GameData(IData):
         else:
             return
         record = {key: value for key, value in zip(keys, args)}
-        if type(record["value"]) not in (int, str, tuple):
+        if type(record["value"]) not in (bool, int, str, tuple):  # objects (field type, color) convert to string
             record["value"] = str(record["value"])
         return record
 
