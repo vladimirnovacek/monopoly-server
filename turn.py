@@ -143,6 +143,8 @@ class Turn:
             logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
         else:
             parameters = message["parameters"]
+            for player in self.controller.gd.players:
+                self.controller.gd.update(section="players", item=player.uuid, attribute="ready", value=False)
             player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
             send_initial_message(player)
             self.controller.message.add(section="events", item="player_connected", value=player.player_id)
