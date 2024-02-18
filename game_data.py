@@ -89,19 +89,18 @@ class GameData(IData):
             self.add_change(section, item, value)
 
     def add_change(self, *args, **kwargs) -> None:
+        if args and kwargs:
+            raise AttributeError("Cannot mix positional and keyword arguments")
         if kwargs:
             try:
                 sorted_keys = sorted(
                     kwargs.keys(),
                     key=lambda key: ("section", "item", "attribute", "value").index(key)
                 )
-                kwargs_values = [kwargs[key] for key in sorted_keys]
-                largs = list(args)
-                largs.extend(kwargs_values)
-                args = tuple(largs)
+                args = tuple([kwargs[key] for key in sorted_keys])
             except ValueError:
                 raise AttributeError("Unknown keyword argument")
-        if args in self._changes or not args:
+        if args in self._changes or not 3 <= len(args) <= 4:
             return
         self._changes.append(args)
 
