@@ -177,7 +177,7 @@ class GameData(IData):
         data = list()
         # Following data is stored in a different location on the player's side, so it has to be reformatted.
         data.append({"section": "misc", "item": "my_uuid", "value": player_uuid})
-        player_id = self.get_value("players", player_uuid, "player_id")
+        player_id = self.players.id_from_uuid(player_uuid)
         data.append({"section": "misc", "item": "my_id", "value": player_id})
         # Retrieve data from "fields" section
         # General board data are sent as "fields" with item == -1
