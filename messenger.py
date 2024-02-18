@@ -31,7 +31,7 @@ class Messenger(IMessenger):
         self.server = server
         self.controller.server_uuid = self.server.server_uuid
 
-    def receive(self, message: ClientMessage | bytes) -> None:
+    def receive(self, message: ClientMessage) -> None:
         """
         Passes the message to the controller. If the message is a bytes object, it is deserialized first.
         :param message: The message to be parsed.
@@ -39,9 +39,8 @@ class Messenger(IMessenger):
         :return: None
         :rtype: None
         """
-        if type(message) == bytes:
-            message = pickle.loads(message)
-        self.controller.parse(message)
+        if message:
+            self.controller.parse(message)
 
     def add(self, to: str | UUID = "all", **kwargs: Any) -> Self:
         """
@@ -61,12 +60,12 @@ class Messenger(IMessenger):
             self._private_messages[to].append(kwargs)
         return self
 
-    def get(self, player_uuid: UUID) -> bytes:
+    def get(self, player_uuid: UUID) -> list:
         """
         Returns the current message queue ready to send. The private queue is emptied.
         :param player_uuid: The UUID of the player.
         :type player_uuid: UUID
-        :return: The current message queue pickled.
+        :return: The current message queue.
         :rtype: bytes
         """
         messages = []
@@ -75,22 +74,22 @@ class Messenger(IMessenger):
         if player_uuid in self._private_messages:
             messages.extend(self._private_messages[player_uuid])
             del self._private_messages[player_uuid]
-        return pickle.dumps(messages) if messages else b""
+        return messages
 
-    def send(self, player_uuid: UUID, data: bytes | None = None) -> None:
+    def send(self, player_uuid: UUID, message: Any | None = None) -> None:
         """
         Sends the given data to the given player. If no data is given, the current message queue is sent. The queue is
         emptied.
         :param player_uuid: The UUID of the player.
         :type player_uuid: UUID
-        :param data: The data to be sent.
-        :type data: bytes | None
+        :param message: The data to be sent.
+        :type message: bytes | None
         """
-        if data is None:
-            data = self.get(player_uuid)
-        if data:
-            logging.debug(f"Sending to {player_uuid}: {pickle.loads(data)}")
-            self.server.send(player_uuid, data)
+        if message is None:
+            message = self.get(player_uuid)
+        if message:
+            logging.debug(f"Sending to {player_uuid}: {message}")
+            self.server.send(player_uuid, message)
 
     def broadcast(self, data: bytes | None = None) -> None:
         """

@@ -37,7 +37,7 @@ class IMessenger(ABC):
         ...
 
     @abstractmethod
-    def receive(self, message: ClientMessage | bytes) -> None:
+    def receive(self, message: ClientMessage) -> None:
         ...
 
     @abstractmethod

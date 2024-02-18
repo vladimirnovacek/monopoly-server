@@ -1,13 +1,30 @@
 import logging
 import pickle
+import struct
 
 import uuid
+from typing import Any, Callable
 
 from twisted.internet.protocol import Protocol, Factory, connectionDone
 from twisted.python import failure
 
 from interfaces import IServer, IMessenger
 
+
+def encode(message: Any) -> bytes:
+    pickled_data = pickle.dumps(message)
+    return struct.pack("!I", len(pickled_data)) + pickled_data
+
+
+def decode(data: bytes) -> tuple[Any, bytes]:
+        try:
+            size = struct.unpack("!I", data[:4])[0]
+            pickled_data = data[4:4 + size]
+            data = b"" if len(data) <= 4 + size else data[4 + size:]
+            return pickle.loads(pickled_data), data
+        except (struct.error, pickle.UnpicklingError) as e:
+            logging.error(f"Error extracting pickled object: {e}")
+            return None, b""
 
 class Server(Protocol):
     factory: "ServerFactory"
@@ -41,17 +58,24 @@ class Server(Protocol):
             self.factory.retrieve_id(self.player_id)
 
     def dataReceived(self, data: bytes):
-        print("Data received: ", pickle.loads(data))
-        self.factory.messenger.receive(data)
+        message, data = decode(data)
+        print("Data received: ", message)
+        if message:
+            self.factory.messenger.receive(message)
+        if data:
+            self.dataReceived(data)
 
-    def send(self, data: bytes) -> None:
+    def send(self, message: Any, encoder: Callable) -> None:
         """
         Sends the given data to the client.
-        :param data: The data to be sent.
-        :type data: bytes
+        :param message: The data to be sent.
+        :type message: Any
+        :param encoder: The function used to encode the data.
+        :type encoder: Callable
         """
-        logging.debug(f"Sending data: {pickle.loads(data)}")
-        self.transport.write(data)
+        logging.debug(f"Sending data: {message}")
+        self.transport.write(encoder(message))
+
 
 class ServerFactory(Factory, IServer):
 
@@ -85,21 +109,25 @@ class ServerFactory(Factory, IServer):
         """
         self.available_ids.add(player_id)
 
-    def broadcast(self, data: bytes) -> None:
+    def broadcast(self, data: bytes, encoder: Callable = encode) -> None:
         """
         Broadcasts the given data to all connected clients.
         :param data: The data to be sent.
         :type data: bytes
+        :param encoder: The function used to encode the data.
+        :type encoder: Callable
         """
         for client in self.connected_clients.values():
-            client.send(data)
+            client.send(data, encoder)
 
-    def send(self, player_uuid: uuid.UUID, data: bytes) -> None:
+    def send(self, player_uuid: uuid.UUID, data: Any, encoder: Callable = encode) -> None:
         """
         Sends the given data to the given player.
         :param player_uuid: The UUID of the player.
         :type player_uuid: UUID
         :param data: The data to be sent.
         :type data: bytes
+        :param encoder: The function used to encode the data.
+        :type encoder: Callable
         """
-        self.connected_clients[player_uuid].send(data)
+        self.connected_clients[player_uuid].send(data, encoder)
