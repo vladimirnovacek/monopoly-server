@@ -8,6 +8,7 @@ from typing import Any, Callable
 from twisted.internet.protocol import Protocol, Factory, connectionDone
 from twisted.python import failure
 
+import config
 from interfaces import IServer, IMessenger
 
 
@@ -58,14 +59,12 @@ class Server(Protocol):
             self.factory.retrieve_id(self.player_id)
 
     def dataReceived(self, data: bytes):
-        message, data = decode(data)
-        print("Data received: ", message)
-        if message:
+        messages = config.encoder.decode(data)
+        for message in messages:
+            print("Data received: ", message)
             self.factory.messenger.receive(message)
-        if data:
-            self.dataReceived(data)
 
-    def send(self, message: Any, encoder: Callable) -> None:
+    def send(self, message: Any) -> None:
         """
         Sends the given data to the client.
         :param message: The data to be sent.
@@ -74,7 +73,7 @@ class Server(Protocol):
         :type encoder: Callable
         """
         logging.debug(f"Sending data: {message}")
-        self.transport.write(encoder(message))
+        self.transport.write(config.encoder.encode(message))
 
 
 class ServerFactory(Factory, IServer):
@@ -109,18 +108,16 @@ class ServerFactory(Factory, IServer):
         """
         self.available_ids.add(player_id)
 
-    def broadcast(self, data: bytes, encoder: Callable = encode) -> None:
+    def broadcast(self, data: bytes) -> None:
         """
         Broadcasts the given data to all connected clients.
         :param data: The data to be sent.
         :type data: bytes
-        :param encoder: The function used to encode the data.
-        :type encoder: Callable
         """
         for client in self.connected_clients.values():
-            client.send(data, encoder)
+            client.send(data)
 
-    def send(self, player_uuid: uuid.UUID, data: Any, encoder: Callable = encode) -> None:
+    def send(self, player_uuid: uuid.UUID, data: Any) -> None:
         """
         Sends the given data to the given player.
         :param player_uuid: The UUID of the player.
@@ -130,4 +127,4 @@ class ServerFactory(Factory, IServer):
         :param encoder: The function used to encode the data.
         :type encoder: Callable
         """
-        self.connected_clients[player_uuid].send(data, encoder)
+        self.connected_clients[player_uuid].send(data)
