@@ -155,9 +155,13 @@ class BoardData(IFields):
         """ List of all fields on the board. """
         self._generate_fields()
         self.lenght: int = self.LENGHT
+        """ Lenght of the board. The Jail and Just Visiting fields are counted as one field. """
         self.jail: int = self.JAIL
+        """ Index of the jail field. It has to be out of the range of 0 - LENGHT """
         self.just_visiting: int = self.JUST_VISITING
+        """ Index of the just visiting field. """
         self.go_cash: int = self.GO_CASH
+        """ Cash that the player recieves when they pass GO. """
 
     def __len__(self):
         return len(self.fields)
@@ -224,6 +228,13 @@ class BoardData(IFields):
         return len(list(owned_properties))
 
     def has_full_set(self, field: Field) -> bool:
+        """
+        Returns True if all streets in the set of the field given as parameter are owned by the same player.
+        :param field:
+        :type field:Field
+        :return:
+        :rtype: bool
+        """
         owner = field.owner
         streets_in_set = filter(
             lambda street: street.index in field.full_set, self.fields)
@@ -232,46 +243,26 @@ class BoardData(IFields):
         else:
             return False
 
-    def get_field(self, field: int) -> Field:
-        return self.fields[field]
-
-    def get_field_info(self, field: int):
-        return self.get_field(field).get_info()
-
-    def get_field_type(self, field: int) -> FieldType:
-        return self.fields[field].field_type
-
-    def is_chance(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.CHANCE
-
-    def is_cc(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.CC
-
-    def is_card(self, field: int) -> bool:
-        return bool(self.get_field_type(field) & FieldType.CARD)
-
-    def is_street(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.STREET
-
-    def is_railroad(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.RAILROAD
-
-    def is_utility(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.UTILITY
-
-    def is_tax(self, field: int) -> bool:
-        return self.get_field_type(field) is FieldType.TAX
-
-    def is_property(self, field: int) -> bool:
-        return bool(self.get_field_type(field) & FieldType.PROPERTY)
-
-    def is_go_to_jail(self, field: int) -> bool:
-        return self.get_field(field).is_go_to_jail()
-
-    def is_nonactive(self, field: int) -> bool:
-        return self.get_field(field).is_nonactive()
+    def get_field(self, field_id: int) -> Field:
+        """
+        Returns a field by its index.
+        :param field_id:
+        :type field_id: int
+        :return:
+        :rtype: Field
+        """
+        return self.fields[field_id]
 
     def advance_field_id(self, original_field: int, steps: int) -> int:
+        """
+        Counts a field_id where a token lands when it starts on the `original_field` and moves `steps` steps.
+        :param original_field: Field_id of the field where the token starts.
+        :type original_field: int
+        :param steps: Number of steps the token moves.
+        :type steps: int
+        :return: Field_id of the field where the token lands.
+        :rtype: int
+        """
         return (original_field + steps) % self.lenght
 
     def _generate_fields(self, fields: list[FieldRecord] = None) -> None:
