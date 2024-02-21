@@ -337,7 +337,7 @@ class Turn:
         if self.controller.gd.is_changes_pending():
             self.controller.gd.update(section="events", item="player_updated", value=True)
             if message["parameters"]["attribute"] == "ready":
-                if self.controller.gd.players.is_all_ready() and len(self.controller.gd.players) < 2:
+                if self.controller.gd.players.is_all_ready() and len(self.controller.gd.players) >= 2:
                     return "start_game"
             self._broadcast_changes()
         self.input_expected = True
