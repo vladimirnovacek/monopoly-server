@@ -7,6 +7,7 @@ from interfaces import IController
 
 
 class CardDict(TypedDict):
+    card_id: int
     text: str
     command: Callable
     card_type: str
