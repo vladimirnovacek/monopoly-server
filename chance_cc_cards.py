@@ -157,13 +157,6 @@ class Card:
     def apply(self, controller: IController):
         self.command(controller)
 
-    def is_move(self) -> bool:
-        """
-        True if the action ordered by this card is moving.
-        :return:
-        """
-        return self.type == "move"
-
 
 
 class CardDeck:
