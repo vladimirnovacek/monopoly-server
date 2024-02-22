@@ -146,7 +146,13 @@ class CardCommands:
 
 
 class Card:
-    def __init__(self, card_id: int, text: str, command: Callable, card_type: str, ends_turn: bool = False, special_rent: str = ""):
+    def __init__(self,
+                 card_id: int, 
+                 text: str, 
+                 command: Callable, 
+                 card_type: str, 
+                 ends_turn: bool = False, 
+                 special_rent: str = ""):
         self.id: int = card_id
         self.text: str = text
         self.command: Callable = command
