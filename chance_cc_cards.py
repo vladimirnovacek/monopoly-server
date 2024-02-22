@@ -1,7 +1,7 @@
 
 import itertools
 import random
-from typing import Callable, TypedDict
+from typing import Callable, TypedDict, Literal
 
 from interfaces import IController
 
@@ -248,7 +248,7 @@ class CardDeck:
          "command": CardCommands.collect_100, "card_type": "collect"}
     ]
 
-    def __init__(self, deck_type: str) -> None:
+    def __init__(self, deck_type: Literal["cc", "chance"]) -> None:
         self._deck_type = deck_type
         self._deck: list[Card] = []
         deck = self._CHANCE_CARDS if deck_type == self.CHANCE else self._CC_CARDS
