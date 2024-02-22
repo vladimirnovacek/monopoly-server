@@ -3,7 +3,7 @@ import pickle
 import struct
 
 import uuid
-from typing import Any, Callable
+from typing import Any
 
 from twisted.internet.protocol import Protocol, Factory, connectionDone
 from twisted.python import failure
@@ -69,8 +69,6 @@ class Server(Protocol):
         Sends the given data to the client.
         :param message: The data to be sent.
         :type message: Any
-        :param encoder: The function used to encode the data.
-        :type encoder: Callable
         """
         logging.debug(f"Sending data: {message}")
         self.transport.write(config.encoder.encode(message))
@@ -108,14 +106,14 @@ class ServerFactory(Factory, IServer):
         """
         self.available_ids.add(player_id)
 
-    def broadcast(self, data: bytes) -> None:
+    def broadcast(self, message: Any) -> None:
         """
         Broadcasts the given data to all connected clients.
-        :param data: The data to be sent.
-        :type data: bytes
+        :param message: The data to be sent.
+        :type message: bytes
         """
         for client in self.connected_clients.values():
-            client.send(data)
+            client.send(message)
 
     def send(self, player_uuid: uuid.UUID, data: Any) -> None:
         """
@@ -124,7 +122,5 @@ class ServerFactory(Factory, IServer):
         :type player_uuid: UUID
         :param data: The data to be sent.
         :type data: bytes
-        :param encoder: The function used to encode the data.
-        :type encoder: Callable
         """
         self.connected_clients[player_uuid].send(data)

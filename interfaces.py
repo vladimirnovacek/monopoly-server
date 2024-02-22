@@ -25,11 +25,7 @@ class IMessenger(ABC):
         ...
 
     @abstractmethod
-    def get(self, player_uuid: UUID) -> bytes:
-        ...
-
-    @abstractmethod
-    def send(self, player_uuid: UUID) -> None:
+    def send(self, player_uuid: UUID, message: Any | None = None) -> None:
         ...
 
     @abstractmethod

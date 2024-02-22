@@ -23,7 +23,7 @@ class GameData(IData):
     def __init__(self):
         self.fields: BoardData = BoardData()
         self.players: Players = Players()
-        self.misc: Misc = {"state": "pregame"}
+        self.misc: Misc = {}
         self._changes: list[tuple] = []
         self.player_order_cycler: cycle | None = None
 
