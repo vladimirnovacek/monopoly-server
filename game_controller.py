@@ -1,4 +1,4 @@
-
+from typing import Any
 from uuid import UUID
 
 import config
@@ -28,7 +28,7 @@ class GameController(IController):
 
     def roll(self, register: bool = True) -> IRoll:
         roll = self.dice.roll(register)
-        self.gd.update(section="events", item="roll", value=roll.get())
+        self.send_event(event="roll", value=roll.get())
         return roll
 
     def pay(self, payment: int, payer_uuid: UUID, payee_uuid: UUID | None = None) -> None:
@@ -45,10 +45,10 @@ class GameController(IController):
         :rtype:
         """
         payer_cash = self.gd.players[payer_uuid].cash
-        self.gd.update(section="players", item=payer_uuid, attribute="cash", value=payer_cash - payment)
+        self.update(section="players", item=payer_uuid, attribute="cash", value=payer_cash - payment)
         if payee_uuid is not None:
             payee_cash = self.gd.players[payee_uuid].cash
-            self.gd.update(section="players", item=payee_uuid, attribute="cash", value=payee_cash + payment)
+            self.update(section="players", item=payee_uuid, attribute="cash", value=payee_cash + payment)
 
     def collect(self, payment: int, player_uuid: UUID) -> None:
         """
@@ -61,7 +61,7 @@ class GameController(IController):
         :rtype:
         """
         player_cash = self.gd.players[player_uuid].cash
-        self.gd.update(section="players", item=player_uuid, attribute="cash", value=player_cash + payment)
+        self.update(section="players", item=player_uuid, attribute="cash", value=player_cash + payment)
 
     def move_to(self, field_id: int, player_uuid: UUID | None = None, check_pass_go: bool = False) -> None:
         """
@@ -77,13 +77,13 @@ class GameController(IController):
         if player_uuid is None:
             player_uuid = self.gd.on_turn_uuid
         original_field = self.gd.players[player_uuid].field
-        self.gd.update(section="players", item=player_uuid, attribute="field", value=field_id)
+        self.update(section="players", item=player_uuid, attribute="field", value=field_id)
         if field_id == self.gd.fields.JAIL:
-            self.gd.update(section="players", item=player_uuid, attribute="in_jail", value=True)
+            self.update(section="players", item=player_uuid, attribute="in_jail", value=True)
         elif original_field == self.gd.fields.JAIL:
-            self.gd.update(section="players", item=player_uuid, attribute="in_jail", value=False)
+            self.update(section="players", item=player_uuid, attribute="in_jail", value=False)
         elif check_pass_go and original_field > field_id:
-            self.gd.update(section="events", item="pass_go", value=True)
+            self.add_message(section="events", item="pass_go", value=True)
             self.collect(config.go_cash, player_uuid)
 
 
@@ -108,4 +108,19 @@ class GameController(IController):
         if price == -1:
             price = field.price
         self.pay(price, player.uuid, field.owner)
-        self.gd.update(section="fields", item=field.id, attribute="owner", value=player.uuid)
+        self.update(section="fields", item=field.id, attribute="owner", value=player.uuid)
+
+    def update(self, *, section: str, item: Any, attribute: str | None = None, value: Any) -> bool:
+        change = self.gd.update(section=section, item=item, attribute=attribute, value=value)
+        if change:
+            self.add_message(section=section, item=item, attribute=attribute, value=value)
+        return change
+
+    def send_event(self, event: str, value: Any = True, to: str = "all") -> None:
+        self.add_message(section="events", item=event, value=value, to=to)
+        self.message.broadcast()
+
+    def add_message(self, *, section: str, item: Any, attribute: str = None, value: Any, to: str = "all") -> None:
+        if type(item) == UUID:
+            item = self.gd.players[item].player_id
+        self.message.add(to=to, section=section, item=item, attribute=attribute, value=value)

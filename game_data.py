@@ -1,5 +1,4 @@
 import itertools
-from collections.abc import Iterator
 from itertools import cycle
 import random
 from uuid import UUID
@@ -24,7 +23,6 @@ class GameData(IData):
         self.fields: BoardData = BoardData()
         self.players: Players = Players()
         self.misc: Misc = {}
-        self._changes: list[tuple] = []
         self.player_order_cycler: cycle | None = None
 
     def __getitem__(self, item):
@@ -57,7 +55,7 @@ class GameData(IData):
         except KeyError:
             return None
 
-    def update(self, *, section: str, item: int | str | UUID, attribute: str | None = None, value: Any) -> None:
+    def update(self, *, section: str, item: int | str | UUID, attribute: str | None = None, value: Any) -> bool:
         """
         Updates the value of a specific item.
         :param section:
@@ -68,41 +66,20 @@ class GameData(IData):
         :type attribute: str | None
         :param value:
         :type value: Any
-        :return:
-        :rtype: None
+        :return: True if the value was changed
+        :rtype: bool
         """
         if self.get_value(section,item, attribute) == value:  # No changes, necessary due to recursion
-            return
+            return False
         if section == "fields":
             self.fields.update(item=item, attribute=attribute, value=value)
-            self.add_change(section, item, attribute, value)
         elif section == "players":
             self.players.update(item=item, attribute=attribute, value=value)
-            self.add_change(section, item, attribute, value)
-        elif section == "events":
-            self.add_change(section, item, value)
         elif attribute is not None:
             self[section][item][attribute] = value
-            self.add_change(section, item, attribute, value)
         else:
             self[section][item] = value
-            self.add_change(section, item, value)
-
-    def add_change(self, *args, **kwargs) -> None:
-        if args and kwargs:
-            raise AttributeError("Cannot mix positional and keyword arguments")
-        if kwargs:
-            try:
-                sorted_keys = sorted(
-                    kwargs.keys(),
-                    key=lambda key: ("section", "item", "attribute", "value").index(key)
-                )
-                args = tuple([kwargs[key] for key in sorted_keys])
-            except ValueError:
-                raise AttributeError("Unknown keyword argument")
-        if args in self._changes or not 3 <= len(args) <= 4:
-            return
-        self._changes.append(args)
+        return True
 
     def get_value(self, section: str, item: str | int | UUID, attribute: str | None = None) -> Any:
         """
@@ -144,28 +121,6 @@ class GameData(IData):
         if type(record["value"]) not in (bool, int, str, tuple, list):  # objects (field type, color) convert to string
             record["value"] = str(record["value"])
         return record
-
-    def get_changes(self, for_client: bool = True) -> Iterator[dict]:
-        """
-        Retrieves data for all recently altered items in a format that can be used by the messenger. Method
-        returns an iterator that can be used in a for loop.
-        :param for_client: When changes are meant to be sent to a client, uuid has to be replaced with id.
-        Default: True.
-        :type for_client: bool
-        :return:
-        :rtype: Iterator[tuple[str, str | UUID, str | None]]
-        """
-        while self._changes:
-            change = self.get(*self._changes.pop())
-            if change["section"] == "players" and change["attribute"] == "possible_actions":
-                change["to"] = change["item"]
-            if for_client:
-                if change["section"] == "players":
-                    change["item"] = self.players.id_from_uuid(change["item"])
-            yield change
-
-    def is_changes_pending(self) -> bool:
-        return bool(self._changes)
 
     def get_all_for_player(self, player_uuid: UUID) -> list[dict]:
         """
@@ -212,6 +167,4 @@ class GameData(IData):
 
     def add_player(self, player_uuid: UUID, player_id: int):
         player = self.players.add(player_uuid, player_id)
-        for attribute in player:
-            self.add_change(section="players", item=player.uuid, attribute=attribute, value=player[attribute])
         return player

@@ -52,6 +52,9 @@ class Messenger(IMessenger):
         :return: The current instance so that methods can be chained.
         :rtype: Self
         """
+        kwargs = {k: v for k, v in kwargs.items() if k in {"section", "item", "attribute", "value"}}
+        if "attribute" in kwargs and kwargs["attribute"] is None:
+            del kwargs["attribute"]
         if to == "all":
             self._messages.append(kwargs)
         else:

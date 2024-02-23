@@ -31,12 +31,7 @@ class PickleEncoder(Encoder):
             remaining_data = b"" if len(data) <= 4 + size else data[4 + size:]
             if remaining_data:
                 message = PickleEncoder.decode(remaining_data)
-                if len(message) == 1:
-                    messages.append(message[0])
-                elif len(message) == 0:
-                    pass
-                else:
-                    messages.extend(message)
+                messages.extend(message)
             return messages
         except (struct.error, pickle.UnpicklingError, EOFError) as e:
             logging.error(f"Error extracting pickled object: {e}")

@@ -21,7 +21,7 @@ class IMessenger(ABC):
     controller: "IController"
 
     @abstractmethod
-    def add(self, **kwargs) -> Self:
+    def add(self, to: str | UUID = "all", **kwargs: Any) -> Self:
         ...
 
     @abstractmethod
@@ -55,6 +55,14 @@ class IPlayer(ABC):
     in_jail: bool
     jail_turns: int
     get_out_of_jail_cards: int
+
+    def __getitem__(self, item):
+        ...
+
+    @abstractmethod
+    def __iter__(self):
+        ...
+
 
 class IPlayers(IDataUnit, Sized, Iterable):
     @abstractmethod
@@ -129,14 +137,6 @@ class IData(ABC):
         ...
 
     @abstractmethod
-    def get_changes(self) -> Iterator[dict]:
-        ...
-
-    @abstractmethod
-    def is_changes_pending(self) -> bool:
-        ...
-
-    @abstractmethod
     def get_value(self, section: str, item: str | UUID, attribute: str | None = None) -> Any:
         ...
 
@@ -145,7 +145,7 @@ class IData(ABC):
         ...
 
     @abstractmethod
-    def update(self, *, section: str, item: int |str | UUID, attribute: str | None = None, value: Any) -> None:
+    def update(self, *, section: str, item: int |str | UUID, attribute: str | None = None, value: Any) -> bool:
         ...
 
     @abstractmethod
@@ -241,3 +241,14 @@ class IController(ABC):
     @abstractmethod
     def buy_property(self, field: IField, player: IPlayer, price: int = -1) -> None:
         ...
+
+    def send_event(self, event: str, value: Any = True, to: str | UUID = "all") -> None:
+        ...
+
+    def update(self, *, section: str, item: Any, attribute: str | None = None, value: Any) -> bool:
+        ...
+
+    def add_message(self, *, section: str, item: Any, attribute: str = None, value: Any, to: str | UUID = "all"):
+        ...
+
+
