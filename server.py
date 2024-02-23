@@ -12,21 +12,6 @@ import config
 from interfaces import IServer, IMessenger
 
 
-def encode(message: Any) -> bytes:
-    pickled_data = pickle.dumps(message)
-    return struct.pack("!I", len(pickled_data)) + pickled_data
-
-
-def decode(data: bytes) -> tuple[Any, bytes]:
-        try:
-            size = struct.unpack("!I", data[:4])[0]
-            pickled_data = data[4:4 + size]
-            data = b"" if len(data) <= 4 + size else data[4 + size:]
-            return pickle.loads(pickled_data), data
-        except (struct.error, pickle.UnpicklingError) as e:
-            logging.error(f"Error extracting pickled object: {e}")
-            return None, b""
-
 class Server(Protocol):
     factory: "ServerFactory"
 
