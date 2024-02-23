@@ -299,7 +299,7 @@ class Turn:
                     self._start_game()
 
     def _use_card(self) -> None:
-        self.controller.gd.update(section="events", item="use_card", value=True)
+        self.controller.gd.update(section="event", item="use_card", value=True)
         cards_left = self.on_turn_player.get_out_of_jail_cards - 1
         self.on_turn_player.get_out_of_jail_cards = cards_left
         self.controller.update(

@@ -83,7 +83,7 @@ class GameController(IController):
         elif original_field == self.gd.fields.JAIL:
             self.update(section="players", item=player_uuid, attribute="in_jail", value=False)
         elif check_pass_go and original_field > field_id:
-            self.add_message(section="events", item="pass_go", value=True)
+            self.add_message(section="event", item="pass_go", value=True)
             self.collect(config.go_cash, player_uuid)
 
 
@@ -117,7 +117,7 @@ class GameController(IController):
         return change
 
     def send_event(self, event: str, value: Any = True, to: str = "all") -> None:
-        self.add_message(section="events", item=event, value=value, to=to)
+        self.add_message(section="event", item=event, value=value, to=to)
         self.message.broadcast()
 
     def add_message(self, *, section: str, item: Any, attribute: str = None, value: Any, to: str = "all") -> None:
