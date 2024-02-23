@@ -46,7 +46,7 @@ class Server(Protocol):
     def dataReceived(self, data: bytes):
         messages = config.encoder.decode(data)
         for message in messages:
-            print("Data received: ", message)
+            logging.debug(f"Received data: {message}")
             self.factory.messenger.receive(message)
 
     def send(self, message: Any) -> None:
@@ -70,6 +70,8 @@ class ServerFactory(Factory, IServer):
         self.connected_clients: dict[uuid.UUID, Server] = dict()
         self.available_ids: set[int] = set(range(4))
         self.locked = False
+        logging.debug(f"Server started")
+        logging.debug(f"Server UUID: {self.server_uuid}")
 
     def get_id(self) -> int:
         """

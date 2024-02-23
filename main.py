@@ -1,3 +1,5 @@
+import logging
+
 from twisted.internet import reactor
 
 import config
@@ -16,4 +18,5 @@ def start_server():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     start_server()
