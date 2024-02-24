@@ -55,7 +55,6 @@ class Server(Protocol):
         :param message: The data to be sent.
         :type message: Any
         """
-        logging.debug(f"Sending data: {message}")
         self.transport.write(config.encoder.encode(message))
 
 
