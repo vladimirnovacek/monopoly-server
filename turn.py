@@ -92,6 +92,7 @@ class Turn:
             parameters = message["parameters"]
             for player in self.controller.gd.players:
                 self.controller.update(section="players", item=player, attribute="ready", value=False)
+            self.controller.send_event("update_player")
             player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
             send_initial_message(player)
             for attribute in player:
