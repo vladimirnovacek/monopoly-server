@@ -20,24 +20,24 @@ class Turn:
     def on_turn_player_field(self) -> IField:
         return self.controller.gd.fields.get_field(self.on_turn_player.field)
 
-    def get_possible_actions(self, player_uuid: UUID) -> set[str]:
+    def get_possible_actions(self, player_uuid: UUID) -> list[str]:
         if player_uuid == self.controller.server_uuid:
-            return {"add_player"}
+            return ["add_player"]
         if self.stage == "pre_game":
-            return {"update_player", "start_game"}
+            return ["update_player", "start_game"]
         if player_uuid != self.on_turn_player.uuid:
-            return set()
+            return []
         match self.stage:
             case "begin_turn":
-                return {"roll"}
+                return ["roll"]
             case "in_jail":
                 return self._get_possible_actions_in_jail()
             case "rent_roll":
-                return {"roll"}
+                return ["roll"]
             case "buying_decision":
-                return {"buy", "auction"}
+                return ["buy", "auction"]
             case "end_turn":
-                return {"end_turn"}
+                return ["end_turn"]
 
     def parse(self, message: ClientMessage):
         if message["action"] not in self.get_possible_actions(message["my_uuid"]):
@@ -287,12 +287,12 @@ class Turn:
         logging.info(f"Player {self.on_turn_player.name} uses a get out of jail card.")
         self._leave_jail()
 
-    def _get_possible_actions_in_jail(self):
-        actions = {"payout"}
+    def _get_possible_actions_in_jail(self) -> list[str]:
+        actions = ["payout"]
         if self.on_turn_player.get_out_of_jail_cards > 0:
-            actions.add("use_card")
+            actions.append("use_card")
         if self.on_turn_player.jail_turns < 3:
-            actions.add("roll")
+            actions.append("roll")
         return actions
 
     def _change_stage(self, stage: str, event: str | None = None) -> None:
@@ -303,9 +303,9 @@ class Turn:
         self.controller.send_event(event)
 
     def _send_possible_actions(self) -> None:
-        for player in self.controller.gd.players:
+        for player_uuid in self.controller.gd.players:
             self.controller.add_message(
-                section="misc", item="possible_actions", value=self.get_possible_actions(player), to=player.uuid
+                section="misc", item="possible_actions", value=self.get_possible_actions(player_uuid), to=player_uuid
             )
 # === STAGES LIST ===
 '''
