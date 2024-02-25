@@ -110,3 +110,6 @@ class Messenger(IMessenger):
         else:
             logging.debug(f"Broadcasting: {pickle.loads(data)}")
             self.server.broadcast(data)
+
+    def is_messages_pending(self) -> bool:
+        return bool(self._messages or self._private_messages)

@@ -40,6 +40,10 @@ class IMessenger(ABC):
     def set_server(self, server: IServer) -> None:
         ...
 
+    @abstractmethod
+    def is_messages_pending(self) -> bool:
+        ...
+
 
 class IDataUnit(ABC):
     ...
