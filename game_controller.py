@@ -28,7 +28,8 @@ class GameController(IController):
 
     def roll(self, register: bool = True) -> IRoll:
         roll = self.dice.roll(register)
-        self.send_event(event="roll", value=roll.get())
+        self.add_message(section="misc", item="roll", value=roll.get())
+        self.send_event(event="roll")
         return roll
 
     def pay(self, payment: int, payer_uuid: UUID, payee_uuid: UUID | None = None) -> None:
