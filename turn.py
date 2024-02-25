@@ -235,9 +235,9 @@ class Turn:
         self.controller.update(section="misc", item="player_order", value=player_order)
         self.player_order_cycler = itertools.cycle(player_order)
         self.controller.message.server.locked = True
-        self.on_turn_player = gd.on_turn_player
         self.controller.send_event("game_started")
         self.controller.update(section="misc", item="on_turn", value=next(self.player_order_cycler))
+        self.on_turn_player = gd.on_turn_player
         logging.info("Game started.")
         self._change_stage("begin_turn")
 
@@ -305,7 +305,7 @@ class Turn:
     def _send_possible_actions(self) -> None:
         for player in self.controller.gd.players:
             self.controller.add_message(
-                section="misc", item="possible_actions", value=self.get_possible_actions(player)
+                section="misc", item="possible_actions", value=self.get_possible_actions(player), to=player.uuid
             )
 # === STAGES LIST ===
 '''
