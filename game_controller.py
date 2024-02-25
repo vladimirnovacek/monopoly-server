@@ -118,8 +118,9 @@ class GameController(IController):
         return change
 
     def send_event(self, event: str, value: Any = True, to: str = "all") -> None:
-        self.add_message(section="event", item=event, value=value, to=to)
-        self.message.broadcast()
+        if self.message.is_messages_pending():
+            self.add_message(section="event", item=event, value=value, to=to)
+            self.message.broadcast()
 
     def add_message(self, *, section: str, item: Any, attribute: str = None, value: Any, to: str = "all") -> None:
         if type(item) == UUID:
