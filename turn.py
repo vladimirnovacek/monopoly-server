@@ -23,7 +23,7 @@ class Turn:
     def get_possible_actions(self, player_uuid: UUID) -> set[str]:
         if player_uuid == self.controller.server_uuid:
             return {"add_player"}
-        if self.stage in ("pre_game", "add_player"):
+        if self.stage == "pre_game":
             return {"update_player", "start_game"}
         if player_uuid != self.on_turn_player.uuid:
             return set()
@@ -69,22 +69,6 @@ class Turn:
             # TODO add possibilities of buying houses, mortgaging and trading.
 
     def _add_player(self, message: ClientMessage) -> None:
-        def send_initial_message(to: IPlayer) -> None:
-            """
-            Generates the initial message for the given player containing all necessary data from the game data.
-            The message is then sent.
-            :param to: The player.
-            :type to: IPlayer
-            :return: The initial message as bytes.
-            :rtype: bytes
-            """
-            for record in self.controller.gd.get_all_for_player(to.uuid):
-                self.controller.message.add(to=to.uuid, **record)
-            self.controller.add_message(
-                section="misc", item="possible_actions", value=self.get_possible_actions(to.uuid), to=to.uuid
-            )
-            self.controller.send_event("initialize", to=to.uuid)
-
         if message["my_uuid"] != self.controller.server_uuid:
             ''' Only the server should be able to add other players. '''
             logging.warning(f"Player {message['my_uuid']} is trying to add other player.")
@@ -94,14 +78,15 @@ class Turn:
                 self.controller.update(section="players", item=player, attribute="ready", value=False)
             self.controller.send_event("update_player")
             player = self.controller.gd.add_player(parameters["player_uuid"], parameters["player_id"])
-            send_initial_message(player)
+            for record in self.controller.gd.get_all_for_player(player.uuid):
+                self.controller.message.add(to=player.uuid, **record)
+            self.controller.send_event("initialize", to=player.uuid)
             for attribute in player:
                 self.controller.add_message(
                     section="players", item=player.uuid, attribute=attribute, value=player[attribute]
                 )
-            self.controller.send_event("player_connected", value=player.player_id)
+            self._change_stage("pre_game", "player_connected")
             logging.info(f"Player {player.name} connected to the game.")
-        self.stage = "pre_game"
 
     def _buy_property(self) -> None:
         self.controller.buy_property(self.on_turn_player_field, self.on_turn_player)
@@ -112,16 +97,14 @@ class Turn:
 
     def _end_roll(self) -> None:
         if self.controller.dice.last_roll.is_double():
-            self.controller.send_event("end_roll")
+            self._change_stage("begin_turn", "end_roll")
             logging.info(f"Player {self.on_turn_player.name} rolled a double and rolls again.")
-            self.stage = "begin_turn"
         else:
             self._end_turn()
 
     def _end_turn(self) -> None:
         logging.info(f"Player {self.on_turn_player.name} ended their turn.")
-        self.controller.send_event("end_turn", value=self.on_turn_player.player_id)
-        self.stage = "end_turn"
+        self._change_stage("end_turn")
 
     def _end_turn_confirmed(self) -> None:
         on_turn = next(self.controller.gd.player_order_cycler)
@@ -131,11 +114,11 @@ class Turn:
         self.extra_roll = None
         self.controller.dice.reset()
         logging.info(f"Player {self.on_turn_player.name} is on turn.")
-        self.controller.send_event("begin_turn", value=self.on_turn_player.player_id)
         if self.on_turn_player.in_jail:
-            self.stage = "in_jail"
+            stage = "in_jail"
         else:
-            self.stage = "begin_turn"
+            stage = "begin_turn"
+        self._change_stage(stage, "begin_turn")
 
     def _go_to_jail(self) -> None:
         logging.info(f"Player {self.on_turn_player.name} was sent to jail.")
@@ -148,8 +131,7 @@ class Turn:
         self.on_turn_player.jail_turns = 0
         self.controller.move_to(self.controller.gd.fields.JUST_VISITING)
         logging.info(f"Player {self.on_turn_player.name} left jail.")
-        self.controller.send_event("leaving_jail")
-        self.stage = "begin_turn"
+        self._change_stage("begin_turn", "leaving_jail")
 
     def _move(self) -> None:
         self.controller.move_by(self.controller.dice.last_roll.sum())
@@ -172,7 +154,7 @@ class Turn:
 
     def _on_property(self) -> None:
         if not self.on_turn_player_field.owner:
-            self._unowned_property()
+            self._change_stage("buying_decision")
         elif self.on_turn_player_field.owner == self.on_turn_player.uuid:
             self._end_roll()
         else:
@@ -191,8 +173,7 @@ class Turn:
                 self.special_rent = ""
                 self.extra_roll = None
             else:
-                self.controller.send_event("rent_roll")
-                self.stage = "rent_roll"
+                self._change_stage("rent_roll")
                 return
         else:
             rent = self.on_turn_player_field.rent
@@ -253,12 +234,12 @@ class Turn:
         random.shuffle(player_order)
         self.controller.update(section="misc", item="player_order", value=player_order)
         self.player_order_cycler = itertools.cycle(player_order)
-        self.controller.update(section="misc", item="on_turn", value=next(self.player_order_cycler))
         self.controller.message.server.locked = True
         self.on_turn_player = gd.on_turn_player
         self.controller.send_event("game_started")
+        self.controller.update(section="misc", item="on_turn", value=next(self.player_order_cycler))
         logging.info("Game started.")
-        self.stage = "begin_turn"
+        self._change_stage("begin_turn")
 
     def _take_card(self) -> None:
         deck = self.controller.cc if self.on_turn_player_field.type == FieldType.CC else self.controller.chance
@@ -277,10 +258,6 @@ class Turn:
             self._end_turn()
         else:
             self._end_roll()
-
-    def _unowned_property(self) -> None:
-        self.controller.send_event("buying_decision")
-        self.stage = "buying_decision"
 
     def _update_player(self, message: ClientMessage) -> None:
         player = self.controller.gd.players[message["my_uuid"]]
@@ -318,6 +295,18 @@ class Turn:
             actions.add("roll")
         return actions
 
+    def _change_stage(self, stage: str, event: str | None = None) -> None:
+        if not event:
+            event = stage
+        self.stage = stage
+        self._send_possible_actions()
+        self.controller.send_event(event)
+
+    def _send_possible_actions(self) -> None:
+        for player in self.controller.gd.players:
+            self.controller.add_message(
+                section="misc", item="possible_actions", value=self.get_possible_actions(player)
+            )
 # === STAGES LIST ===
 '''
 stages = {
