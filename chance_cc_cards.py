@@ -3,7 +3,7 @@ import itertools
 import random
 from typing import Callable, TypedDict, Literal
 
-from interfaces import IController
+from interfaces import IController, ICardDeck, ICard
 
 
 class CardDict(TypedDict):
@@ -146,7 +146,7 @@ class CardCommands:
                 controller.pay(50, on_turn.uuid, player.uuid)
 
 
-class Card:
+class Card(ICard):
     def __init__(self,
                  card_id: int, 
                  text: str, 
@@ -166,7 +166,7 @@ class Card:
 
 
 
-class CardDeck:
+class CardDeck(ICardDeck):
 
     CHANCE = "chance"
     CC = "cc"
