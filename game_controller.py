@@ -10,7 +10,6 @@ from turn import Turn
 
 class GameController(IController):
     def __init__(self, data: IData, messenger: IMessenger):
-        super().__init__(data)
         self.gd: IData = data
         self.message: IMessenger | None = messenger
         self.message.controller = self

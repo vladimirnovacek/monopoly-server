@@ -261,17 +261,6 @@ class IController(ABC):
     on_turn_player: IPlayer
 
     @abstractmethod
-    def __init__(self, data: IData, messenger: IMessenger) -> None:
-        """
-
-        :param data:
-        :type data: IData
-        :param messenger:
-        :type messenger: IMessenger
-        """
-        ...
-
-    @abstractmethod
     def parse(self, message: ClientMessage) -> None:
         """
         Process the message given in the parameter.
