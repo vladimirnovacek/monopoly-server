@@ -1,6 +1,7 @@
 import itertools
 from itertools import cycle
 import random
+from types import NoneType
 from uuid import UUID
 from typing import TypedDict, Any
 
@@ -118,7 +119,7 @@ class GameData(IData):
         else:
             return
         record = {key: value for key, value in zip(keys, args)}
-        if type(record["value"]) not in (bool, int, str, tuple, list):  # objects (field type, color) convert to string
+        if type(record["value"]) not in (bool, int, str, tuple, list, NoneType):  # objects (field type, color) convert to string
             record["value"] = str(record["value"])
         return record
 
