@@ -1,5 +1,6 @@
 import logging
 import pickle
+from enum import Enum
 from typing import Self, TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -55,6 +56,14 @@ class Messenger(IMessenger):
         kwargs = {k: v for k, v in kwargs.items() if k in {"section", "item", "attribute", "value"}}
         if "attribute" in kwargs and kwargs["attribute"] is None:
             del kwargs["attribute"]
+        for k, v in kwargs.items():
+            if isinstance(v, UUID) and kwargs["item"] != "my_uuid":
+                kwargs[k] = self.controller.gd.players[v].player_id
+            elif isinstance(v, Enum):
+                kwargs[k] = str(v)
+            elif isinstance(v, set) or isinstance(v, tuple):
+                kwargs[k] = list(v)
+
         if to == "all":
             self._messages.append(kwargs)
         else:
