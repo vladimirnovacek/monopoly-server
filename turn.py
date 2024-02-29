@@ -63,7 +63,7 @@ class Turn:
             case "buy":
                 self._buy_property()
             case "auction":
-                self._end_roll()
+                self._auction()
             case "end_turn":
                 self._end_turn_confirmed()
             # TODO add possibilities of buying houses, mortgaging and trading.
@@ -87,6 +87,10 @@ class Turn:
                 )
             self._change_stage("pre_game", "player_connected")
             logging.info(f"Player {player.name} connected to the game.")
+
+    def _auction(self):
+        self.controller.send_event("auction")
+        self._end_turn()
 
     def _buy_property(self) -> None:
         self.controller.buy_property(self.on_turn_player_field, self.on_turn_player)
