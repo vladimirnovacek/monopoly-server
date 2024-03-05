@@ -94,6 +94,7 @@ class Turn:
 
     def _buy_property(self) -> None:
         self.controller.buy_property(self.on_turn_player_field, self.on_turn_player)
+        self.controller.add_message(section="misc", item="price", value=self.on_turn_player_field.price)
         self.controller.send_event("property_bought")
         logging.info(f"Player {self.on_turn_player.uuid} bought {self.on_turn_player_field.name} for "
                      f"{self.on_turn_player_field.price}.")
@@ -101,7 +102,7 @@ class Turn:
 
     def _end_roll(self) -> None:
         if self.controller.dice.last_roll.is_double():
-            self._change_stage("begin_turn", "end_roll")
+            self._change_stage("begin_turn")
             logging.info(f"Player {self.on_turn_player.name} rolled a double and rolls again.")
         else:
             self._end_turn()
@@ -214,7 +215,7 @@ class Turn:
             self._move()
 
     def _roll_in_jail(self) -> None:
-        roll = self.controller.dice.roll(False)
+        roll = self.controller.roll(False)
         self.controller.send_event("roll_in_jail")
         logging.info(f"Player {self.on_turn_player.name} rolled {roll.get()[0]} and {roll.get()[1]}.")
         if roll.is_double():
@@ -237,10 +238,10 @@ class Turn:
         player_order = list(range(len(gd.players)))
         random.shuffle(player_order)
         self.controller.update(section="misc", item="player_order", value=player_order)
-        self.player_order_cycler = itertools.cycle(player_order)
+        self.controller.gd.player_order_cycler = itertools.cycle(player_order)
         self.controller.message.server.locked = True
         self.controller.send_event("game_started")
-        self.controller.update(section="misc", item="on_turn", value=next(self.player_order_cycler))
+        self.controller.update(section="misc", item="on_turn", value=next(self.controller.gd.player_order_cycler))
         self.on_turn_player = gd.on_turn_player
         logging.info("Game started.")
         self._change_stage("begin_turn")
