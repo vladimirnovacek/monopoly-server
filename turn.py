@@ -89,6 +89,7 @@ class Turn:
             logging.info(f"Player {player.name} connected to the game.")
 
     def _auction(self):
+        self.controller.add_message(section="misc", item="bid", value=0)
         self.controller.send_event("auction")
         self._end_turn()
 
