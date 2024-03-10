@@ -94,9 +94,9 @@ class CardCommands:
     @staticmethod
     def collect_10_from_everyone(controller: IController):
         on_turn = controller.gd.on_turn_player
-        for player in controller.gd.players:
-            if player is not on_turn:
-                controller.pay(10, player.uuid, on_turn.uuid)
+        for player_uuid in controller.gd.players:
+            if player_uuid != on_turn.uuid:
+                controller.pay(10, player_uuid, on_turn.uuid)
 
     @staticmethod
     def get_out_of_jail(controller: IController):
