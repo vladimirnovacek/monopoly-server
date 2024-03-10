@@ -195,8 +195,10 @@ class Turn:
         self._end_roll()
 
     def _pay_tax(self) -> None:
-        logging.info(f"Player {self.on_turn_player.name} pays the tax of £{self.on_turn_player_field.tax}.")
-        self.controller.pay(self.on_turn_player_field.tax, self.on_turn_player.uuid)
+        tax = self.on_turn_player_field.tax
+        logging.info(f"Player {self.on_turn_player.name} pays the tax of £{tax}.")
+        self.controller.pay(tax, self.on_turn_player.uuid)
+        self.controller.add_message(section="misc", item="tax", value=tax)
         self.controller.send_event("tax_paid")
         self._end_roll()
 
