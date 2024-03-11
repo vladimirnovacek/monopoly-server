@@ -301,7 +301,7 @@ class Turn:
         actions = ["payout"]
         if self.on_turn_player.get_out_of_jail_cards > 0:
             actions.append("use_card")
-        if self.on_turn_player.jail_turns < 3:
+        if self.on_turn_player.jail_turns < 2:
             actions.append("roll")
         return actions
 

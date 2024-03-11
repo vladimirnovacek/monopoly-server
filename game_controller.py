@@ -52,7 +52,7 @@ class GameController(IController):
         elif original_field == self.gd.fields.JAIL:
             self.update(section="players", item=player_uuid, attribute="in_jail", value=False)
         elif check_pass_go and original_field > field_id:
-            self.add_message(section="event", item="pass_go", value=True)
+            self.add_message(section="misc", item="pass_go", value=True)
             self.collect(config.go_cash, player_uuid)
 
 
