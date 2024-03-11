@@ -143,6 +143,8 @@ class BoardData(IFields):
     """
     LENGHT: ClassVar[int] = 40
     """ Lenght of the board. The Jail and Just Visiting fields are counted as one field. """
+    GO: ClassVar[int] = 0
+    """ Index of the Go field. """
     JAIL: ClassVar[int] = 40
     """ Index of the jail field. It has to be out of the range of 0 - LENGHT """
     JUST_VISITING: ClassVar[int] = 10
