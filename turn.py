@@ -188,9 +188,11 @@ class Turn:
             if self.special_rent == "double":
                 rent *= 2
         logging.info(
-            f"Player {self.on_turn_player.name} pays the rent of £{rent} to {self.on_turn_player_field.owner}."
+            f"Player {self.on_turn_player.name} pays the rent of £{rent} to "
+            f"{self.controller.gd.players[self.on_turn_player_field.owner].name}."
         )
         self.controller.pay(rent, self.on_turn_player.uuid, self.on_turn_player_field.owner)
+        self.controller.add_message(section="misc", item="rent", value=rent)
         self.controller.send_event("rent_paid")
         self._end_roll()
 
