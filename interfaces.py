@@ -94,6 +94,8 @@ class IField(ABC):
     price: int
     rent: int
     tax: int
+    mortgage: bool
+    houses: int
 
 
 class IFields(IDataUnit):
@@ -103,6 +105,10 @@ class IFields(IDataUnit):
 
     @abstractmethod
     def get_field(self, field_id: int) -> IField:
+        ...
+
+    @abstractmethod
+    def get_full_set(self, field: IField) -> set[IField]:
         ...
 
     @abstractmethod

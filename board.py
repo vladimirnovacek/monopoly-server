@@ -35,6 +35,7 @@ class Field(IField):
 
     def __getitem__(self, item):
         return self.full_info[item]
+
     def __iter__(self):
         return iter(self.full_info)
 
@@ -171,7 +172,7 @@ class BoardData(IFields):
     def __iter__(self):
         return iter(self.fields)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Field:
         return self.fields[item]
 
     @property
@@ -238,12 +239,16 @@ class BoardData(IFields):
         :rtype: bool
         """
         owner = field.owner
-        streets_in_set = filter(
-            lambda street: street.index in field.full_set, self.fields)
+        streets_in_set = self.get_full_set(field)
         if all(street.owner == owner for street in streets_in_set):
             return True
         else:
             return False
+
+    def get_full_set(self, field: Field) -> set[Field]:
+        return filter(
+            lambda street: street.index in field.full_set, self.fields
+        )
 
     def get_field(self, field_id: int) -> Field:
         """

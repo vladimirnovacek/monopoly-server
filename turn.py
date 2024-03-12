@@ -139,6 +139,18 @@ class Turn:
         logging.info(f"Player {self.on_turn_player.name} left jail.")
         self._change_stage("begin_turn", "leaving_jail")
 
+    def _mortgage(self, message: ClientMessage) -> None:
+        field_id = message["parameters"]["field"]
+        field = self.controller.gd.fields[field_id]
+        if not field.is_property() or field.owner != message["my_uuid"] or field.mortgage:
+            return
+        for f in self.controller.gd.fields.get_full_set(field):
+            if f.houses > 0:
+                return
+        self.controller.collect(field.mortgage_value, message["my_uuid"])
+        self.controller.update(section="fields", item=field_id, attribute="mortgage", value=True)
+        self.controller.send_event("mortgage")
+
     def _move(self) -> None:
         self.controller.move_by(self.controller.dice.last_roll.sum())
         logging.info(f"Player {self.on_turn_player.name} moved to {self.on_turn_player_field.name}.")
@@ -173,6 +185,8 @@ class Turn:
         self._leave_jail()
 
     def _pay_rent(self) -> None:
+        if self.on_turn_player_field.mortgage:
+            self._end_roll()
         if self.special_rent == "10xroll":
             if self.extra_roll:
                 rent = self.extra_roll.sum() * 10
