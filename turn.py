@@ -119,10 +119,11 @@ class Turn:
             return
         old_houses = [street.houses for street in full_set]
         houses = []
-        for o, n in zip(old_houses, new_houses):
+        for i, (o, n) in enumerate(zip(old_houses, new_houses)):
             total = o + n
             if total > 5:
                 total = 5
+                new_houses[i] = 5 - o
             houses.append(total)
         max_houses = max(houses)
         if any((max_houses - 1 > h or h > max_houses for h in houses)):
