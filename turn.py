@@ -320,6 +320,15 @@ class Turn:
         else:
             self._end_roll()
 
+    def _unmortgage(self, message: ClientMessage) -> None:
+        field_id = message["parameters"]["field"]
+        field = self.controller.gd.fields[field_id]
+        if not field.is_property() or field.owner != message["my_uuid"] or not field.mortgage:
+            return
+        self.controller.pay(field.unmortgage_price, message["my_uuid"])
+        self.controller.update(section="fields", item=field_id, attribute="mortgage", value=False)
+        self.controller.send_event("unmortgage")
+
     def _update_player(self, message: ClientMessage) -> None:
         player = self.controller.gd.players[message["my_uuid"]]
         if message["parameters"]["attribute"] not in ("name", "token", "ready"):

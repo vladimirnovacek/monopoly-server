@@ -96,6 +96,7 @@ class IField(ABC):
     tax: int
     mortgage: bool
     mortgage_value: int
+    unmortgage_price: int
     houses: int
 
     @abstractmethod
