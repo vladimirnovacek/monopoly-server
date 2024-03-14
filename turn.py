@@ -280,6 +280,35 @@ class Turn:
             self.controller.gd.on_turn_player.jail_turns += 1
             self._end_turn()
 
+    def _sell_houses(self, message: ClientMessage) -> None:
+        params = message['parameters']
+        color = params['color']
+        sold_houses = params['houses']
+        full_set = list(self.controller.gd.fields.get_full_set(StreetColor(color)))
+        if any((street.owner != self.on_turn_player.uuid for street in full_set)):
+            return
+        built_houses = [street.houses for street in full_set]
+        houses = []
+        for i, (o, s) in enumerate(built_houses, sold_houses):
+            total = o - s
+            if total < 0:
+                total = 0
+                sold_houses[i] = o
+            houses.append(total)
+        max_houses = max(houses)
+        if any((max_houses - 1 > h or h > max_houses for h in houses)):
+            return
+        price = 0
+        for h, street, s in (houses, full_set, sold_houses):
+            if h + s == 5 and s > 0:
+                price += street.hotel_price // 2
+                s -= 1
+            price += street.house_price * s // 2
+            self.controller.update(section='fields', item=street.id, attribute='houses', value=h)
+        self.controller.collect(price, self.on_turn_player.uuid)
+        self.controller.send_event('houses_sold')
+
+
     def _start_game(self) -> None:
         gd = self.controller.gd
         if not gd.players.is_all_ready():
