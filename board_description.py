@@ -30,17 +30,17 @@ class FieldType(Flag):
 
 class StreetColor(Enum):
     """ StreetColor represents the color of a street. """
-    BROWN = auto()
-    LBLUE = auto()
-    PURPLE = auto()
-    ORANGE = auto()
-    RED = auto()
-    YELLOW = auto()
-    GREEN = auto()
-    DBLUE = auto()
+    BROWN = "brown"
+    LBLUE = "lblue"
+    PURPLE = "purple"
+    ORANGE = "orange"
+    RED = "red"
+    YELLOW = "yellow"
+    GREEN = "green"
+    DBLUE = "dblue"
 
     def __str__(self):
-        return self.name.lower()
+        return self.value
 
 
 class FieldRecord(typing.TypedDict):

@@ -95,7 +95,12 @@ class IField(ABC):
     rent: int
     tax: int
     mortgage: bool
+    mortgage_value: int
     houses: int
+
+    @abstractmethod
+    def is_property(self):
+        ...
 
 
 class IFields(IDataUnit):
@@ -104,11 +109,15 @@ class IFields(IDataUnit):
     JUST_VISITING: ClassVar[int]
 
     @abstractmethod
+    def __getitem__(self, item) -> IField:
+        ...
+
+    @abstractmethod
     def get_field(self, field_id: int) -> IField:
         ...
 
     @abstractmethod
-    def get_full_set(self, field: IField) -> set[IField]:
+    def get_full_set(self, attr) -> set[IField]:
         ...
 
     @abstractmethod
@@ -118,6 +127,11 @@ class IFields(IDataUnit):
     @abstractmethod
     def advance_field_id(self, original_field: int, steps: int) -> int:
         ...
+
+    @abstractmethod
+    def has_full_set(self, attr, owner):
+        ...
+
 
 class IData(ABC):
     players: IPlayers

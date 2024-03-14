@@ -1,10 +1,11 @@
 # -*- tests-case-name: tests.test_board -*-
-from typing import ClassVar, Optional, Any
+from typing import ClassVar, Optional, Any, overload
 
 from uuid import UUID
 
-from board_description import FIELDS, FieldType, FieldRecord
+from board_description import FIELDS, FieldType, FieldRecord, StreetColor
 from interfaces import IFields, IField
+from players import Player
 
 
 class Field(IField):
@@ -220,9 +221,10 @@ class BoardData(IFields):
 
     def get_properties_in_set_owned(self, field: Field) -> int:
         """
-        Returns the number of properties in a set that are owned by the same player.
+        Returns the number of properties in a set that are owned by the same player. Useful for counting rent
+        of railroads or utilities.
         :param field:
-        :type field:
+        :type field: Field
         :return:
         :rtype:
         """
@@ -230,25 +232,52 @@ class BoardData(IFields):
         owned_properties = filter(lambda prop: prop.index in field.full_set and prop.owner == owner, self.fields)
         return len(list(owned_properties))
 
+    @overload
+    def has_full_set(self, color: StreetColor):
+        ...
+
+    @overload
     def has_full_set(self, field: Field) -> bool:
+        ...
+
+    def has_full_set(self, attr: Field | StreetColor, owner: Player | None = None):
         """
-        Returns True if all streets in the set of the field given as parameter are owned by the same player.
-        :param field:
-        :type field:Field
+        Returns True if all streets in the set of the field or color given as parameter are owned by the same player.
+        :param attr:
+        :type attr: Field | StreetColor
+        :param owner:
+        :type owner: Player
         :return:
         :rtype: bool
         """
-        owner = field.owner
-        streets_in_set = self.get_full_set(field)
+
+        streets_in_set = self.get_full_set(attr)
+        if not owner:
+            owner = streets_in_set.pop().owner
+            if not owner:
+                return False
         if all(street.owner == owner for street in streets_in_set):
             return True
         else:
             return False
 
+    @overload
+    def get_full_set(self, color: StreetColor) -> set[Field]:
+        ...
+
+    @overload
     def get_full_set(self, field: Field) -> set[Field]:
-        return filter(
-            lambda street: street.index in field.full_set, self.fields
-        )
+        ...
+
+    def get_full_set(self, attr: Field | StreetColor) -> set[Field]:
+        if type(attr) == Field:
+            return filter(
+                lambda street: street.index in attr.full_set, self.fields
+            )
+        elif type(attr) == StreetColor:
+            return filter(
+                lambda street: street.is_street() and street.color == attr, self.fields
+            )
 
     def get_field(self, field_id: int) -> Field:
         """

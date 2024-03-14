@@ -5,7 +5,7 @@ import random
 from uuid import UUID
 
 import config
-from board_description import FieldType
+from board_description import FieldType, StreetColor
 from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
 
 
@@ -100,6 +100,42 @@ class Turn:
         logging.info(f"Player {self.on_turn_player.uuid} bought {self.on_turn_player_field.name} for "
                      f"{self.on_turn_player_field.price}.")
         self._end_roll()
+
+    def _buy_houses(self, message: ClientMessage) -> None:
+        params = message["parameters"]
+        color = params["color"]
+        new_houses = params["houses"]
+        '''
+        Checks:
+        - if player has full set
+        - if no street from the set has a mortgage
+        - if building max five houses in one street (rounding to 5 in that case)
+        - if the difference between houses in any two streets is less or equal to 1
+        '''
+        if not self.controller.gd.fields.has_full_set(StreetColor(color), self.on_turn_player):
+            return
+        full_set = list(self.controller.gd.fields.get_full_set(StreetColor(color)))
+        if any(street.mortgage for street in full_set):
+            return
+        old_houses = [street.houses for street in full_set]
+        houses = []
+        for o, n in zip(old_houses, new_houses):
+            total = o + n
+            if total > 5:
+                total = 5
+            houses.append(total)
+        max_houses = max(houses)
+        if any((max_houses - 1 > h or h > max_houses for h in houses)):
+            return
+        price = 0
+        for h, street, n in zip(houses, full_set, new_houses):
+            self.controller.update(section="fields", item=street.id, attribute="houses", value=h)
+            if h == 5 and n > 0:
+                price += street.hotel_price
+                n -= 1
+            price += street.house_price * n
+        self.controller.pay(price, self.on_turn_player.uuid)
+        self.controller.send_event("houses_bought")
 
     def _end_roll(self) -> None:
         if self.controller.dice.last_roll.is_double():
