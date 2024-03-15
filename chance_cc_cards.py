@@ -141,9 +141,9 @@ class CardCommands:
     @staticmethod
     def pay_50_to_everyone(controller: IController):
         on_turn = controller.gd.on_turn_player
-        for player in controller.gd.players:
-            if player is not on_turn:
-                controller.pay(50, on_turn.uuid, player.uuid)
+        for player_uuid in controller.gd.players:
+            if player_uuid is not on_turn:
+                controller.pay(50, on_turn.uuid, player_uuid)
 
 
 class Card(ICard):
