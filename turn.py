@@ -21,23 +21,25 @@ class Turn:
         return self.controller.gd.fields.get_field(self.on_turn_player.field)
 
     def get_possible_actions(self, player_uuid: UUID) -> list[str]:
+        actions = ["buy_houses", "sell_houses", "mortgage", "unmortgage"]
         if player_uuid == self.controller.server_uuid:
             return ["add_player"]
         if self.stage == "pre_game":
             return ["update_player", "start_game"]
         if player_uuid != self.on_turn_player.uuid:
-            return []
+            return actions
         match self.stage:
             case "begin_turn":
-                return ["roll"]
+                actions.extend(["roll"])
             case "in_jail":
-                return self._get_possible_actions_in_jail()
+                actions.extend(self._get_possible_actions_in_jail())
             case "rent_roll":
-                return ["roll"]
+                actions.extend(["roll"])
             case "buying_decision":
-                return ["buy", "auction"]
+                actions.extend(["buy", "auction"])
             case "end_turn":
-                return ["end_turn"]
+                actions.extend(["end_turn"])
+        return actions
 
     def parse(self, message: ClientMessage):
         if message["action"] not in self.get_possible_actions(message["my_uuid"]):
@@ -62,6 +64,14 @@ class Turn:
                 self._use_card()
             case "buy":
                 self._buy_property()
+            case "buy_houses":
+                self._buy_houses(message)
+            case "sell_houses":
+                self._sell_houses(message)
+            case "mortgage":
+                self._mortgage(message)
+            case "unmortgage":
+                self._unmortgage(message)
             case "auction":
                 self._auction()
             case "end_turn":
