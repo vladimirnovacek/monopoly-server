@@ -192,7 +192,7 @@ class Turn:
         if not field.is_property() or field.owner != message["my_uuid"] or field.mortgage:
             return
         for f in self.controller.gd.fields.get_full_set(field):
-            if f.houses > 0:
+            if f.type is FieldType.STREET and f.houses > 0:
                 return
         self.controller.collect(field.mortgage_value, message["my_uuid"])
         self.controller.update(section="fields", item=field_id, attribute="mortgage", value=True)
