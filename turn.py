@@ -6,6 +6,7 @@ from uuid import UUID
 
 import config
 from board_description import FieldType, StreetColor
+from enums import Stage, Action
 from interfaces import ClientMessage, IPlayer, IField, IController, IRoll
 
 
@@ -14,68 +15,57 @@ class Turn:
         self.controller: IController = controller
         self.on_turn_player: IPlayer | None = None
         self.extra_roll: IRoll | None = None
-        self.stage = "pre_game"
+        self.stage = Stage.PRE_GAME
 
     @property
     def on_turn_player_field(self) -> IField:
         return self.controller.gd.fields.get_field(self.on_turn_player.field)
 
     def get_possible_actions(self, player_uuid: UUID) -> list[str]:
-        actions = ["buy_houses", "sell_houses", "mortgage", "unmortgage"]
+        actions = [Action.BUY_HOUSES, Action.SELL_HOUSES, Action.MORTGAGE, Action.UNMORTGAGE]
         if player_uuid == self.controller.server_uuid:
-            return ["add_player"]
-        if self.stage == "pre_game":
-            return ["update_player", "start_game"]
+            return [Action.ADD_PLAYER]
+        if self.stage == Stage.PRE_GAME:
+            return [Action.UPDATE_PLAYER, Action.START_GAME]
         if player_uuid != self.on_turn_player.uuid:
             return actions
         match self.stage:
-            case "begin_turn":
-                actions.extend(["roll"])
-            case "in_jail":
+            case Stage.BEGIN_TURN | Stage.RENT_ROLL:
+                actions.extend([Action.ROLL])
+            case Stage.IN_JAIL:
                 actions.extend(self._get_possible_actions_in_jail())
-            case "rent_roll":
-                actions.extend(["roll"])
-            case "buying_decision":
-                actions.extend(["buy", "auction"])
-            case "end_turn":
-                actions.extend(["end_turn"])
+            case Stage.BUYING_DECISION:
+                actions.extend([Action.BUY, Action.AUCTION])
+            case Stage.END_TURN:
+                actions.extend([Action.END_TURN])
         return actions
 
     def parse(self, message: ClientMessage):
         if message["action"] not in self.get_possible_actions(message["my_uuid"]):
             return
-        match message["action"]:
-            case "add_player":
-                self._add_player(message)
-            case "update_player":
-                self._update_player(message)
-            case "start_game":
-                self._start_game()
-            case "roll":
-                if self.stage == "rent_roll":
-                    self._rent_roll()
-                elif self.stage == "in_jail":
-                    self._roll_in_jail()
-                else:
-                    self._roll_dice()
-            case "payout":
-                self._payout()
-            case "use_card":
-                self._use_card()
-            case "buy":
-                self._buy_property()
-            case "buy_houses":
-                self._buy_houses(message)
-            case "sell_houses":
-                self._sell_houses(message)
-            case "mortgage":
-                self._mortgage(message)
-            case "unmortgage":
-                self._unmortgage(message)
-            case "auction":
-                self._auction()
-            case "end_turn":
-                self._end_turn_confirmed()
+        parsing_methods = {
+            Action.ADD_PLAYER: (self._add_player, True),
+            Action.UPDATE_PLAYER: (self._update_player, True),
+            Action.START_GAME: (self._start_game, False),
+            Action.ROLL: (self._roll, False),
+            Action.PAYOUT: (self._payout, False),
+            Action.USE_CARD: (self._use_card, False),
+            Action.BUY: (self._buy_property, False),
+            Action.BUY_HOUSES: (self._buy_houses, True),
+            Action.SELL_HOUSES: (self._sell_houses, True),
+            Action.MORTGAGE: (self._mortgage, True),
+            Action.UNMORTGAGE: (self._unmortgage, True),
+            Action.AUCTION: (self._auction, False),
+            Action.END_TURN: (self._end_turn_confirmed, False),
+            Action.BID: (self._bid, True)
+        }
+        if message["action"] not in parsing_methods:
+            raise KeyError("Unknown action")
+        method, parameter = parsing_methods[message["action"]]
+        if parameter:
+            method(message)
+        else:
+            method()
             # TODO add possibilities of buying houses, mortgaging and trading.
 
     def _add_player(self, message: ClientMessage) -> None:
@@ -95,13 +85,16 @@ class Turn:
                 self.controller.add_message(
                     section="players", item=player.uuid, attribute=attribute, value=player[attribute]
                 )
-            self._change_stage("pre_game", "player_connected")
+            self._change_stage(Stage.PRE_GAME, "player_connected")
             logging.info(f"Player {player.name} connected to the game.")
 
     def _auction(self):
         self.controller.add_message(section="misc", item="bid", value=0)
         self.controller.send_event("auction")
         self._end_turn()
+
+    def _bid(self, message):
+        raise NotImplementedError
 
     def _buy_property(self) -> None:
         self.controller.buy_property(self.on_turn_player_field, self.on_turn_player)
@@ -271,6 +264,14 @@ class Turn:
         logging.info(f"Player {self.on_turn_player.name} rolled a {self.extra_roll.sum()}.")
         self._pay_rent()
 
+    def _roll(self):
+        if self.stage == "rent_roll":
+            self._rent_roll()
+        elif self.stage == "in_jail":
+            self._roll_in_jail()
+        else:
+            self._roll_dice()
+
     def _roll_dice(self) -> None:
         roll = self.controller.roll()
         logging.info(f"Player {self.on_turn_player.name} rolled a {roll.sum()}.")
@@ -396,12 +397,12 @@ class Turn:
         logging.info(f"Player {self.on_turn_player.name} uses a get out of jail card.")
         self._leave_jail()
 
-    def _get_possible_actions_in_jail(self) -> list[str]:
-        actions = ["payout"]
+    def _get_possible_actions_in_jail(self) -> list[Action]:
+        actions = [Action.PAYOUT]
         if self.on_turn_player.get_out_of_jail_cards > 0:
-            actions.append("use_card")
+            actions.append(Action.USE_CARD)
         if self.on_turn_player.jail_turns < 2:
-            actions.append("roll")
+            actions.append(Action.ROLL)
         return actions
 
     def _change_stage(self, stage: str, event: str | None = None) -> None:

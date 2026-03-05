@@ -98,6 +98,8 @@ class IField(ABC):
     mortgage_value: int
     unmortgage_price: int
     houses: int
+    house_price: int
+    hotel_price: int
 
     @abstractmethod
     def is_property(self):

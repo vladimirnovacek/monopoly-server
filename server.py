@@ -9,7 +9,7 @@ from twisted.internet.protocol import Protocol, Factory, connectionDone
 from twisted.python import failure
 
 import config
-from interfaces import IServer, IMessenger
+from interfaces import IServer, IMessenger, ClientMessage
 
 
 class Server(Protocol):
@@ -30,7 +30,7 @@ class Server(Protocol):
             self.player_id = self.factory.get_id()
         self.player_uuid = uuid.uuid4()
         self.factory.connected_clients[self.player_uuid] = self
-        dic = {
+        dic: ClientMessage = {
             "my_uuid": self.factory.server_uuid, "action": "add_player",
             "parameters": {"player_uuid": self.player_uuid, "player_id": self.player_id}
         }
